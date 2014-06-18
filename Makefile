@@ -1,13 +1,21 @@
+#####
+# MAIN PROGRAM
+#####
+
 CXX = nvcc
 CC = nvcc
 CPPFLAGS=-I/usr/include -I/usr/local/cuda/include -DLIBFREENECT_INTERFACE
-## -I../include/libfreenect  -I/opt/local/include
-CXXFLAGS=-g -m64 -O3 -use_fast_math
-## -ptx -src-in-ptx
+
+OBJ = kfusion.o helpers.o test.o interface.o kinect.o
+
+CXXFLAGS=-g -m64 -O3 -use_fast_math -L. -L/usr/lib/x86_64-linux-gnu/
+
+LIBS = libovr.a -lGL -lGLU -lglut -lX11 -lpthread -lglfw3 -ludev -lXxf86vm -lXrandr -lXi
+
 LDFLAGS= -g -m64 -lfreenect -lglut -lGL -L/usr/local/cuda/lib64
-## -g -m64 -L/lib -lfreenect
+
 %.o: %.cu
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $^
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $^ $(LIBS) 
 
 all: kinect test
 
@@ -16,4 +24,5 @@ test: kfusion.o helpers.o test.o
 kinect: kfusion.o helpers.o kinect.o interface.o
 
 clean:
-	rm *.o test kinect
+	rm -f $(OBJ)
+	rm -f test kinect
