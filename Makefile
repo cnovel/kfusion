@@ -14,8 +14,15 @@ LIBS = libovr.a -lGL -lGLU -lglut -lX11 -lpthread -lglfw3 -ludev -lXxf86vm -lXra
 
 LDFLAGS= -g -m64 -lfreenect -lglut -lGL -L/usr/local/cuda/lib64
 
+#####
+# RULES
+#####
+
+kinect.o: kinect.cpp
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBS) -c $^ 
+
 %.o: %.cu
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $^ $(LIBS) 
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBS) -c $^ 
 
 all: kinect test
 
