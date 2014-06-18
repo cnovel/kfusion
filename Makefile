@@ -1,10 +1,11 @@
 CXX = nvcc
 CC = nvcc
-CPPFLAGS=-I../include -I../include/libfreenect -I/usr/loca/cuda/include -I/opt/local/include -DLIBFREENECT_INTERFACE
+CPPFLAGS=-I/usr/include -I/usr/local/cuda/include -DLIBFREENECT_INTERFACE
+## -I../include/libfreenect  -I/opt/local/include
 CXXFLAGS=-g -m64 -O3 -use_fast_math
 ## -ptx -src-in-ptx
-LDFLAGS=-g -m64 -L../lib -lfreenect -Xlinker -framework,OpenGL,-framework,GLUT
-
+LDFLAGS= -g -m64 -lfreenect -lglut -lGL -L/usr/local/cuda/lib64
+## -g -m64 -L/lib -lfreenect
 %.o: %.cu
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $^
 

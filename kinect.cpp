@@ -43,7 +43,7 @@ using namespace std;
 using namespace TooN;
 
 KFusion kfusion;
-Image<uchar4, HostDevice> lightScene, trackModel, lightModel, texModel;
+Image<uchar4, HostDevice> lightScene, trackModel, lightModel, texModel, viewLeft, viewRight;
 Image<uint16_t, HostDevice> depthImage[2];
 Image<uchar3, HostDevice> rgbImage;
 
@@ -58,8 +58,8 @@ bool reset = true;
 bool should_integrate = true;
 bool render_texture = false;
 
-Image<float3, Device> pos, normals;
-Image<float, Device> dep;
+Image<float3, Device> pos, normals, posRight, normalsRight, posLeft, normalsLeft;
+Image<float, Device> dep, depRight, depLeft;
 
 SE3<float> preTrans, trans, rot(makeVector(0.0, 0, 0, 0, 0, 0));
 bool redraw_big_view = false;
@@ -86,37 +86,52 @@ void display(void){
             reset = false;
     }
 
-    renderLight( lightScene.getDeviceImage(), kfusion.inputVertex[0], kfusion.inputNormal[0], light, ambient );
-    renderLight( lightModel.getDeviceImage(), kfusion.vertex, kfusion.normal, light, ambient);
-    renderTrackResult(trackModel.getDeviceImage(), kfusion.reduction);
+    //renderLight( lightScene.getDeviceImage(), kfusion.inputVertex[0], kfusion.inputNormal[0], light, ambient );
+    //renderLight( lightModel.getDeviceImage(), kfusion.vertex, kfusion.normal, light, ambient);
+    //renderTrackResult(trackModel.getDeviceImage(), kfusion.reduction);
     static int count = 4;
-    if(count > 3 || redraw_big_view){
-        renderInput( pos, normals, dep, kfusion.integration, toMatrix4( trans * rot * preTrans ) * getInverseCameraMatrix(kfusion.configuration.camera * 2), kfusion.configuration.nearPlane, kfusion.configuration.farPlane, kfusion.configuration.stepSize(), 0.75 * kfusion.configuration.mu);
+
+    Matrix4 leftEye = getInverseCameraMatrix(kfusion.configuration.camera * 2);
+    Matrix4 rightEye = getInverseCameraMatrix(kfusion.configuration.camera * 2);
+    leftEye.data[0].w = -0.0325f;
+    rightEye.data[0].w = 0.0325f;
+
+    if(count >= 0 || redraw_big_view){ 
+        //renderInput( pos, normals, dep, kfusion.integration, toMatrix4( trans * rot * preTrans ) * getInverseCameraMatrix(kfusion.configuration.camera * 2), kfusion.configuration.nearPlane, kfusion.configuration.farPlane, kfusion.configuration.stepSize(), 0.75 * kfusion.configuration.mu);
+
+        renderInput( posRight, normalsRight, depRight, kfusion.integration, kfusion.pose * rightEye, kfusion.configuration.nearPlane, kfusion.configuration.farPlane, kfusion.configuration.stepSize(), 0.75 * kfusion.configuration.mu);
+        renderInput( posLeft, normalsLeft, depLeft, kfusion.integration, kfusion.pose * leftEye, kfusion.configuration.nearPlane, kfusion.configuration.farPlane, kfusion.configuration.stepSize(), 0.75 * kfusion.configuration.mu);
         count = 0;
         redraw_big_view = false;
     } else
         count++;
-    if(render_texture)
-        renderTexture( texModel.getDeviceImage(), pos, normals, rgbImage.getDeviceImage(), getCameraMatrix(2*kfusion.configuration.camera) * inverse(kfusion.pose), light);
-    else
-        renderLight( texModel.getDeviceImage(), pos, normals, light, ambient);
+    if(render_texture) {
+        //renderTexture( texModel.getDeviceImage(), pos, normals, rgbImage.getDeviceImage(), getCameraMatrix(2*kfusion.configuration.camera) * inverse(kfusion.pose), light);
+
+        renderTexture( viewLeft.getDeviceImage(), posLeft, normalsLeft, rgbImage.getDeviceImage(), getCameraMatrix(2*kfusion.configuration.camera) * inverse(kfusion.pose), light);
+        renderTexture( viewRight.getDeviceImage(), posRight, normalsRight, rgbImage.getDeviceImage(), getCameraMatrix(2*kfusion.configuration.camera) * inverse(kfusion.pose), light);
+    } else {
+        //renderLight( texModel.getDeviceImage(), pos, normals, light, ambient);
+        renderLight( viewLeft.getDeviceImage(), posLeft, normalsLeft, light, ambient);
+        renderLight( viewRight.getDeviceImage(), posRight, normalsRight, light, ambient);
+    }
     cudaDeviceSynchronize();
 
     Stats.sample("render");
 
     glClear(GL_COLOR_BUFFER_BIT);
     glRasterPos2i(0, 0);
-    glDrawPixels(lightScene);
-    glRasterPos2i(0, 240);
-    glPixelZoom(0.5, -0.5);
-    glDrawPixels(rgbImage);
-    glPixelZoom(1,-1);
-    glRasterPos2i(320,0);
-    glDrawPixels(lightModel);
-    glRasterPos2i(320,240);
-    glDrawPixels(trackModel);
+    glDrawPixels(viewLeft);
+    //glRasterPos2i(0, 240);
+    //glPixelZoom(0.5, -0.5);
+    //glDrawPixels(rgbImage);
+    //glPixelZoom(1,-1);
+    //glRasterPos2i(320,0);
+    //glDrawPixels(lightModel);
+    //glRasterPos2i(320,240);
+    //glDrawPixels(trackModel);
     glRasterPos2i(640, 0);
-    glDrawPixels(texModel);
+    glDrawPixels(viewRight);
     const double endProcessing = Stats.sample("draw");
 
     Stats.sample("total", endProcessing - startFrame, PerfStats::TIME);
@@ -197,7 +212,7 @@ void exitFunc(void){
 }
 
 int main(int argc, char ** argv) {
-    const float size = (argc > 1) ? atof(argv[1]) : 2.f;
+    const float size = (argc > 1) ? atof(argv[1]) : 5.f;
 
     KFusionConfig config;
 
@@ -205,12 +220,12 @@ int main(int argc, char ** argv) {
     // everything else is derived from that.
     // config.volumeSize = make_uint3(64);
     // config.volumeSize = make_uint3(128);
-    config.volumeSize = make_uint3(256);
+    config.volumeSize = make_uint3(768);
 
     // these are physical dimensions in meters
     config.volumeDimensions = make_float3(size);
-    config.nearPlane = 0.4f;
-    config.farPlane = 5.0f;
+    config.nearPlane = 0.2f;
+    config.farPlane = 10.0f;
     config.mu = 0.1;
     config.combinedTrackAndReduce = false;
 
@@ -232,7 +247,7 @@ int main(int argc, char ** argv) {
 
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE );
-    glutInitWindowSize(config.inputSize.x * 2 + 640, max(config.inputSize.y * 2, 480));
+    glutInitWindowSize(1280, 800);
     glutCreateWindow("kfusion");
 
     kfusion.Init(config);
@@ -244,7 +259,10 @@ int main(int argc, char ** argv) {
 
     // render buffers
     lightScene.alloc(config.inputSize), trackModel.alloc(config.inputSize), lightModel.alloc(config.inputSize);
-    pos.alloc(make_uint2(640, 480)), normals.alloc(make_uint2(640, 480)), dep.alloc(make_uint2(640, 480)), texModel.alloc(make_uint2(640, 480));
+    pos.alloc(make_uint2(640, 480)), normals.alloc(make_uint2(640, 480)), dep.alloc(make_uint2(640, 480)), texModel.alloc(make_uint2(640, 480)), viewLeft.alloc(make_uint2(640, 800)), viewRight.alloc(make_uint2(640, 800));
+
+    posRight.alloc(make_uint2(640, 480)), normalsRight.alloc(make_uint2(640, 480)), depRight.alloc(make_uint2(640, 480));
+    posLeft.alloc(make_uint2(640, 480)), normalsLeft.alloc(make_uint2(640, 480)), depLeft.alloc(make_uint2(640, 480));
 
     if(printCUDAError()) {
         cudaDeviceReset();

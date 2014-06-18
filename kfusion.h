@@ -36,6 +36,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <stdint.h>
 #include <iostream>
 #include <vector>
+#include <string.h>
 
 #include <vector_types.h>
 #include <vector_functions.h>
@@ -72,24 +73,24 @@ struct KFusionConfig {
     dim3 raycastBlock;          // block size for raycasting
 
     KFusionConfig(){
-        volumeSize = make_uint3(64);
-        volumeDimensions = make_float3(1.f);
+        volumeSize = make_uint3(32);
+        volumeDimensions = make_float3(.1f);
 
         combinedTrackAndReduce = false;
 
         camera = make_float4(160,160,160,120);
-        inputSize = make_uint2(320,240);
+        inputSize = make_uint2(640,480);
 
         nearPlane = 0.4f;
         farPlane = 4.0f;
         mu = 0.1f;
-        maxweight = 100.0f;
+        maxweight = 200.0f;
 
         radius = 2;
         delta = 4.0f;
         e_delta = 0.1f;
 
-        dist_threshold = 0.1f;
+        dist_threshold = 0.05f;
         normal_threshold = 0.8f;
         iterations.push_back( 5 );
         iterations.push_back( 5 );
