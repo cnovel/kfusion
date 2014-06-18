@@ -26,6 +26,10 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "interface.h"
 #include "perfstats.h"
 
+// OVR include
+#include "LibOVR/Src/OVR_CAPI.h"
+#include "LibOVR/Src/Kernel/OVR_Math.h"
+
 #include <iostream>
 #include <sstream>
 #include <iomanip>
@@ -285,6 +289,22 @@ int main(int argc, char ** argv) {
     preTrans = SE3<float>::exp(makeVector(0.0, 0, -size, 0, 0, 0));
     trans = SE3<float>::exp(makeVector(0.5, 0.5, 0.5, 0, 0, 0) * size);
 
+
+    // OVR Part
+    // Initializes LibOVR
+    ovr_Initialize();
+    
+    ovrHmd hmd = ovrHmd_Create(0);
+    ovrHmdDesc hmdDesc;
+
+    if (hmd) {
+        ovrHmd_GetDesc(hmd, &hmdDesc);
+    }
+
+    // Start the sensors (don't need position)
+    ovrHmd_StartSensor(hmd, ovrSensorCap_Orientation | ovrSensorCap_YawCorrection, ovrSensorCap_Orientation);
+
+
     atexit(exitFunc);
     glutDisplayFunc(display);
     glutKeyboardFunc(keys);
@@ -294,7 +314,10 @@ int main(int argc, char ** argv) {
 
     glutMainLoop();
 
+    // Close Kinect & Rift
     CloseKinect();
+    ovrHmd_Destroy(hmd);
+    ovr_Shutdown();
 
     return 0;
 }
