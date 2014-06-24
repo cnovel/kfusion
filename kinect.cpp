@@ -33,6 +33,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+#include <cmath>
 
 #ifdef __APPLE__
 #include <GLUT/glut.h>
@@ -52,7 +53,9 @@ Image<uint16_t, HostDevice> depthImage[2];
 Image<uchar3, HostDevice> rgbImage;
 
 const float3 light = make_float3(1, 1, -1.0);
+const float3 lightbis = make_float3(-1, -1, 1.0);
 const float3 ambient = make_float3(0.1, 0.1, 0.1);
+const float3 ambientbis = make_float3(1, 1, 1);
 
 SE3<float> initPose;
 
@@ -61,6 +64,7 @@ int integration_rate = 2;
 bool reset = true;
 bool should_integrate = true;
 bool render_texture = false;
+bool ovr_sensor_tracking = false;
 
 Image<float3, Device> pos, normals, posRight, normalsRight, posLeft, normalsLeft;
 Image<float, Device> dep, depRight, depLeft;
@@ -68,8 +72,27 @@ Image<float, Device> dep, depRight, depLeft;
 SE3<float> preTrans, trans, rot(makeVector(0.0, 0, 0, 0, 0, 0));
 bool redraw_big_view = false;
 
+// OVR Object
+ovrHmd hmd;
+ovrHmdDesc hmdDesc;
+
 void display(void){
-    const uint2 imageSize = kfusion.configuration.inputSize;
+
+    // OVR Sensor set up
+    ovrSensorState ss = ovrHmd_GetSensorState(hmd, 0.0);
+    float yYaw = 0;
+    float xEyePitch = 0;
+    float zEyeRoll = 0;
+
+    if (ss.StatusFlags & (ovrStatus_OrientationTracked)) {
+        OVR::Transformf pose = ss.Recorded.Pose;
+
+        pose.Rotation.GetEulerAngles<OVR::Axis_Y, OVR::Axis_X, OVR::Axis_Z>(&yYaw, &xEyePitch, &zEyeRoll);
+        yYaw = -yYaw;
+        zEyeRoll = -zEyeRoll;
+    }
+
+    //const uint2 imageSize = kfusion.configuration.inputSize;
     static bool integrate = true;
 
     glClear( GL_COLOR_BUFFER_BIT );
@@ -90,21 +113,55 @@ void display(void){
             reset = false;
     }
 
+
     //renderLight( lightScene.getDeviceImage(), kfusion.inputVertex[0], kfusion.inputNormal[0], light, ambient );
     //renderLight( lightModel.getDeviceImage(), kfusion.vertex, kfusion.normal, light, ambient);
     //renderTrackResult(trackModel.getDeviceImage(), kfusion.reduction);
     static int count = 4;
+    Matrix4 cameraView = getInverseCameraMatrix(kfusion.configuration.camera * 2);
+    Matrix4 ovrPose = kfusion.pose;
 
-    Matrix4 leftEye = getInverseCameraMatrix(kfusion.configuration.camera * 2);
-    Matrix4 rightEye = getInverseCameraMatrix(kfusion.configuration.camera * 2);
+    if (ovr_sensor_tracking) {
+        ovrPose.data[0].x = cos(yYaw)*cos(zEyeRoll) + sin(yYaw)*sin(xEyePitch)*sin(zEyeRoll);
+        ovrPose.data[0].y = cos(zEyeRoll)*sin(yYaw)*sin(xEyePitch) - cos(yYaw)*sin(zEyeRoll);
+        ovrPose.data[0].z = cos(xEyePitch)*sin(yYaw);
+        
+        ovrPose.data[1].x = cos(xEyePitch)*sin(zEyeRoll);
+        ovrPose.data[1].y = cos(xEyePitch)*cos(zEyeRoll);
+        ovrPose.data[1].z = - sin(xEyePitch);
+        
+        ovrPose.data[2].x = cos(yYaw)*sin(xEyePitch)*sin(zEyeRoll) - cos(zEyeRoll)*sin(yYaw);
+        ovrPose.data[2].y = sin(yYaw)*sin(zEyeRoll) + cos(yYaw)*cos(zEyeRoll)*sin(xEyePitch);
+        ovrPose.data[2].z = cos(yYaw)*cos(xEyePitch);
+    }
+
+    Matrix4 leftEye = cameraView;
+    Matrix4 rightEye = cameraView;
     leftEye.data[0].w = -0.0325f;
     rightEye.data[0].w = 0.0325f;
 
+    float3 lux = make_float3(ovrPose.data[0].w, ovrPose.data[1].w, ovrPose.data[2].w);
+
+    // Distorsion for Rift
+    /*
+    ovrEyeType ovrEyeLeft, ovrEyeRight;
+    OVR::Sizei recommendedTex0Size = ovrHmd_GetFovTextureSize(hmd, ovrEyeLeft, hmdDesc.DefaultEyeFov[0], 1.0f);
+    OVR::Sizei recommendedTex1Size = ovrHmd_GetFovTextureSize(hmd, ovrEyeRight, hmdDesc.DefaultEyeFov[1], 1.0f);
+    OVR::Sizei renderTargetSize;
+    renderTargetSize.Width = recommendedTex0Size.Width + recommendedTex1Size.Width;
+    renderTargetSize.Width = max(recommendedTex0Size.Height, recommendedTex1Size.Height);
+
+
+    const int eyeRenderMultisample = 1;
+
+    pRendertargetTexture = pRender->CreateTexture(Texture_RGBA | Texture_RenderTarget | eyeRenderMultisample, renderTargetSize.Width; renderTargetSize.Height, NULL);
+    //*/
+
     if(count >= 0 || redraw_big_view){ 
         //renderInput( pos, normals, dep, kfusion.integration, toMatrix4( trans * rot * preTrans ) * getInverseCameraMatrix(kfusion.configuration.camera * 2), kfusion.configuration.nearPlane, kfusion.configuration.farPlane, kfusion.configuration.stepSize(), 0.75 * kfusion.configuration.mu);
-
-        renderInput( posRight, normalsRight, depRight, kfusion.integration, kfusion.pose * rightEye, kfusion.configuration.nearPlane, kfusion.configuration.farPlane, kfusion.configuration.stepSize(), 0.75 * kfusion.configuration.mu);
-        renderInput( posLeft, normalsLeft, depLeft, kfusion.integration, kfusion.pose * leftEye, kfusion.configuration.nearPlane, kfusion.configuration.farPlane, kfusion.configuration.stepSize(), 0.75 * kfusion.configuration.mu);
+        
+        renderInput( posLeft, normalsLeft, depLeft, kfusion.integration, ovrPose * leftEye, kfusion.configuration.nearPlane, kfusion.configuration.farPlane, kfusion.configuration.stepSize(), 0.75 * kfusion.configuration.mu);
+        renderInput( posRight, normalsRight, depRight, kfusion.integration, ovrPose * rightEye, kfusion.configuration.nearPlane, kfusion.configuration.farPlane, kfusion.configuration.stepSize(), 0.75 * kfusion.configuration.mu);
         count = 0;
         redraw_big_view = false;
     } else
@@ -112,12 +169,12 @@ void display(void){
     if(render_texture) {
         //renderTexture( texModel.getDeviceImage(), pos, normals, rgbImage.getDeviceImage(), getCameraMatrix(2*kfusion.configuration.camera) * inverse(kfusion.pose), light);
 
-        renderTexture( viewLeft.getDeviceImage(), posLeft, normalsLeft, rgbImage.getDeviceImage(), getCameraMatrix(2*kfusion.configuration.camera) * inverse(kfusion.pose), light);
+        renderTexture( viewLeft.getDeviceImage(), posLeft, normalsLeft, rgbImage.getDeviceImage(), getCameraMatrix(2*kfusion.configuration.camera) * inverse(kfusion.pose), lux);
         renderTexture( viewRight.getDeviceImage(), posRight, normalsRight, rgbImage.getDeviceImage(), getCameraMatrix(2*kfusion.configuration.camera) * inverse(kfusion.pose), light);
     } else {
         //renderLight( texModel.getDeviceImage(), pos, normals, light, ambient);
-        renderLight( viewLeft.getDeviceImage(), posLeft, normalsLeft, light, ambient);
-        renderLight( viewRight.getDeviceImage(), posRight, normalsRight, light, ambient);
+        renderLight( viewLeft.getDeviceImage(), posLeft, normalsLeft, lux, ambient);
+        renderLight( viewRight.getDeviceImage(), posRight, normalsRight, lux, ambient);
     }
     cudaDeviceSynchronize();
 
@@ -134,25 +191,27 @@ void display(void){
     //glDrawPixels(lightModel);
     //glRasterPos2i(320,240);
     //glDrawPixels(trackModel);
-    glRasterPos2i(640, 0);
-    glDrawPixels(viewRight);
+    //glRasterPos2i(640, 0);
+    //glDrawPixels(viewRight);
     const double endProcessing = Stats.sample("draw");
 
-    Stats.sample("total", endProcessing - startFrame, PerfStats::TIME);
-    Stats.sample("total_proc", endProcessing - startProcessing, PerfStats::TIME);
+    //Stats.sample("total", endProcessing - startFrame, PerfStats::TIME);
+    //Stats.sample("total_proc", endProcessing - startProcessing, PerfStats::TIME);
 
     if(printCUDAError())
         exit(1);
 
     ++counter;
 
+    /*
     if(counter % 50 == 0){
         Stats.print();
         Stats.reset();
         cout << endl;
     }
+    //*/
 
-    glutSwapBuffers();
+    glutSwapBuffers();    
 }
 
 void idle(void){
@@ -175,6 +234,9 @@ void keys(unsigned char key, int x, int y){
         break;
     case 't':
         render_texture = !render_texture;
+        break;
+    case 'o':
+        ovr_sensor_tracking = !ovr_sensor_tracking;
         break;
     }
 }
@@ -263,10 +325,11 @@ int main(int argc, char ** argv) {
 
     // render buffers
     lightScene.alloc(config.inputSize), trackModel.alloc(config.inputSize), lightModel.alloc(config.inputSize);
-    pos.alloc(make_uint2(640, 480)), normals.alloc(make_uint2(640, 480)), dep.alloc(make_uint2(640, 480)), texModel.alloc(make_uint2(640, 480)), viewLeft.alloc(make_uint2(640, 800)), viewRight.alloc(make_uint2(640, 800));
+    pos.alloc(make_uint2(640, 480)), normals.alloc(make_uint2(640, 480)), dep.alloc(make_uint2(640, 480)), texModel.alloc(make_uint2(640, 480));
+    viewLeft.alloc(make_uint2(1280, 800)), viewRight.alloc(make_uint2(1280, 800));
 
-    posRight.alloc(make_uint2(640, 480)), normalsRight.alloc(make_uint2(640, 480)), depRight.alloc(make_uint2(640, 480));
-    posLeft.alloc(make_uint2(640, 480)), normalsLeft.alloc(make_uint2(640, 480)), depLeft.alloc(make_uint2(640, 480));
+    posRight.alloc(make_uint2(640, 800)), normalsRight.alloc(make_uint2(640, 800)), depRight.alloc(make_uint2(640, 800));
+    posLeft.alloc(make_uint2(1280, 800)), normalsLeft.alloc(make_uint2(1280, 800)), depLeft.alloc(make_uint2(640, 800));
 
     if(printCUDAError()) {
         cudaDeviceReset();
@@ -294,8 +357,7 @@ int main(int argc, char ** argv) {
     // Initializes LibOVR
     ovr_Initialize();
     
-    ovrHmd hmd = ovrHmd_Create(0);
-    ovrHmdDesc hmdDesc;
+    hmd = ovrHmd_Create(0);
 
     if (hmd) {
         ovrHmd_GetDesc(hmd, &hmdDesc);
@@ -303,7 +365,7 @@ int main(int argc, char ** argv) {
 
     // Start the sensors (don't need position)
     ovrHmd_StartSensor(hmd, ovrSensorCap_Orientation | ovrSensorCap_YawCorrection, ovrSensorCap_Orientation);
-
+    //*/
 
     atexit(exitFunc);
     glutDisplayFunc(display);
