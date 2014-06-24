@@ -177,8 +177,12 @@ void renderVolumeLight( Image<uchar4> out, const Volume & volume, const Matrix4 
 
 __global__ void raycastInput( Image<float3> pos3D, Image<float3> normal, Image<float> depth, const Volume volume, const Matrix4 view, const float nearPlane, const float farPlane, const float step, const float largestep){
     const uint2 pos = thr2pos2();
+
+    uint2 transPos = pos;
+    transPos.y -= 160;
+    transPos.x -= 320;
     
-    float4 hit = raycast( volume, pos, view, nearPlane, farPlane, step, largestep);
+    float4 hit = raycast( volume, transPos, view, nearPlane, farPlane, step, largestep);
     if(hit.w > 0){
         pos3D[pos] = make_float3(hit);
         depth[pos] = hit.w;
@@ -197,6 +201,6 @@ __global__ void raycastInput( Image<float3> pos3D, Image<float3> normal, Image<f
 
 
 void renderInput( Image<float3> pos3D, Image<float3> normal, Image<float> depth, const Volume volume, const Matrix4 view, const float nearPlane, const float farPlane, const float step, const float largestep){
-    dim3 block(16,16);
+    dim3 block(32,16);
     raycastInput<<<divup(pos3D.size, block), block>>>(pos3D, normal, depth, volume, view, nearPlane, farPlane, step, largestep);
 }
