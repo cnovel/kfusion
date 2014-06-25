@@ -11,12 +11,13 @@ Requirements
 ------------
 OFusion has been tested only with Linux Ubuntu 13.10 64bits.
 
-OFusion depends on the following libraries:
+OFusion depends mainly on the following libraries:
 
 * TooN http://www.edwardrosten.com/cvd/toon.html
 * GLUT
 * libfreenect http://openkinect.org/
 * CUDA 5 SDK http://developer.nvidia.com/cuda
+* Oculus Rift SDK
 
 Install
 -----
