@@ -92,7 +92,6 @@ void display(void){
         zEyeRoll = -zEyeRoll;
     }
 
-    //const uint2 imageSize = kfusion.configuration.inputSize;
     static bool integrate = true;
 
     glClear( GL_COLOR_BUFFER_BIT );
@@ -100,10 +99,8 @@ void display(void){
     const double startProcessing = Stats.sample("kinect");
 
     kfusion.setKinectDeviceDepth(depthImage[GetKinectFrame()].getDeviceImage());
-    //Stats.sample("raw to cooked");
 
     integrate = kfusion.Track();
-    //Stats.sample("track");
 
     if((should_integrate && integrate && ((counter % integration_rate) == 0)) || reset){
         kfusion.Integrate();
@@ -113,10 +110,6 @@ void display(void){
             reset = false;
     }
 
-
-    //renderLight( lightScene.getDeviceImage(), kfusion.inputVertex[0], kfusion.inputNormal[0], light, ambient );
-    //renderLight( lightModel.getDeviceImage(), kfusion.vertex, kfusion.normal, light, ambient);
-    //renderTrackResult(trackModel.getDeviceImage(), kfusion.reduction);
     static int count = 4;
     Matrix4 cameraView = getInverseCameraMatrix(kfusion.configuration.camera * 2);
     Matrix4 ovrPose = kfusion.pose;
@@ -183,33 +176,13 @@ void display(void){
     glClear(GL_COLOR_BUFFER_BIT);
     glRasterPos2i(0, 0);
     glDrawPixels(viewLeft);
-    //glRasterPos2i(0, 240);
-    //glPixelZoom(0.5, -0.5);
-    //glDrawPixels(rgbImage);
-    //glPixelZoom(1,-1);
-    //glRasterPos2i(320,0);
-    //glDrawPixels(lightModel);
-    //glRasterPos2i(320,240);
-    //glDrawPixels(trackModel);
     //glRasterPos2i(640, 0);
     //glDrawPixels(viewRight);
-    const double endProcessing = Stats.sample("draw");
-
-    //Stats.sample("total", endProcessing - startFrame, PerfStats::TIME);
-    //Stats.sample("total_proc", endProcessing - startProcessing, PerfStats::TIME);
 
     if(printCUDAError())
         exit(1);
 
     ++counter;
-
-    /*
-    if(counter % 50 == 0){
-        Stats.print();
-        Stats.reset();
-        cout << endl;
-    }
-    //*/
 
     glutSwapBuffers();    
 }
@@ -328,8 +301,9 @@ int main(int argc, char ** argv) {
     pos.alloc(make_uint2(640, 480)), normals.alloc(make_uint2(640, 480)), dep.alloc(make_uint2(640, 480)), texModel.alloc(make_uint2(640, 480));
     viewLeft.alloc(make_uint2(1280, 800)), viewRight.alloc(make_uint2(1280, 800));
 
-    posRight.alloc(make_uint2(640, 800)), normalsRight.alloc(make_uint2(640, 800)), depRight.alloc(make_uint2(640, 800));
     posLeft.alloc(make_uint2(1280, 800)), normalsLeft.alloc(make_uint2(1280, 800)), depLeft.alloc(make_uint2(640, 800));
+    posRight.alloc(make_uint2(1280, 800)), normalsRight.alloc(make_uint2(1280, 800)), depRight.alloc(make_uint2(640, 800));
+
 
     if(printCUDAError()) {
         cudaDeviceReset();
