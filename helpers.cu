@@ -152,8 +152,9 @@ void renderTrackResult( Image<uchar4> out, const Image<TrackData> & data ){
 
 __global__ void raycastLight( Image<uchar4> render, const Volume volume, const Matrix4 view, const float nearPlane, const float farPlane, const float step, const float largestep, const float3 light, const float3 ambient){
     const uint2 pos = thr2pos2();
+    int2 posS = make_int2(pos.x, pos.y);
     
-    float4 hit = raycast( volume, pos, view, nearPlane, farPlane, step, largestep);
+    float4 hit = raycast( volume, posS, view, nearPlane, farPlane, step, largestep);
     if(hit.w > 0){
         const float3 test = make_float3(hit);
         const float3 surfNorm = volume.grad(test);
@@ -178,7 +179,7 @@ void renderVolumeLight( Image<uchar4> out, const Volume & volume, const Matrix4 
 __global__ void raycastInput( Image<float3> pos3D, Image<float3> normal, Image<float> depth, const Volume volume, const Matrix4 view, const float nearPlane, const float farPlane, const float step, const float largestep){
     const uint2 pos = thr2pos2();
 
-    uint2 transPos = pos;
+    int2 transPos = make_int2(pos.x, pos.y);
     transPos.y -= 160;
     transPos.x -= 320;
     
