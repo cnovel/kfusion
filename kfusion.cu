@@ -44,8 +44,9 @@ __global__ void initVolume( Volume volume, const float2 val ){
 
 __global__ void raycast( Image<float3> pos3D, Image<float3> normal, const Volume volume, const Matrix4 view, const float nearPlane, const float farPlane, const float step, const float largestep){
     const uint2 pos = thr2pos2();
+    int2 posS = make_int2(pos.x, pos.y);
 
-    const float4 hit = raycast( volume, pos, view, nearPlane, farPlane, step, largestep );
+    const float4 hit = raycast( volume, posS, view, nearPlane, farPlane, step, largestep );
     if(hit.w > 0){
         pos3D[pos] = make_float3(hit);
         float3 surfNorm = volume.grad(make_float3(hit));
