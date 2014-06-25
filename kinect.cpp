@@ -100,10 +100,10 @@ void display(void){
     const double startProcessing = Stats.sample("kinect");
 
     kfusion.setKinectDeviceDepth(depthImage[GetKinectFrame()].getDeviceImage());
-    Stats.sample("raw to cooked");
+    //Stats.sample("raw to cooked");
 
     integrate = kfusion.Track();
-    Stats.sample("track");
+    //Stats.sample("track");
 
     if((should_integrate && integrate && ((counter % integration_rate) == 0)) || reset){
         kfusion.Integrate();
@@ -297,7 +297,7 @@ int main(int argc, char ** argv) {
 
     // change the following parameters for using 640 x 480 input images
     config.inputSize = make_uint2(320,240);
-    config.camera =  make_float4(531.15/2, 531.15/2, 640/4, 480/4);
+    config.camera =  make_float4(531.15/2, 531.15/2, 160, 120);
 
     // config.iterations is a vector<int>, the length determines
     // the number of levels to be used in tracking
