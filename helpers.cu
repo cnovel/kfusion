@@ -219,13 +219,14 @@ __global__ void hmd_warp(Image<uchar4> out, const Image<uchar4> view, const int 
     int2 posS = make_int2(pos.x, pos.y);
     float2 posFloat = make_float2(float(posS.x)/1280.0f, float(posS.y)/800.0f);
 
-    float2 hmd_lens_center;
+    float2 hmd_lens_center = make_float2(0.5f, 0.5f);
 
+    /*
     if (eye == 1)
         hmd_lens_center = make_float2(0.5f - 0.25f * 0.5f, 0.5f);
     else
         hmd_lens_center = make_float2(0.5f + 0.25f * 0.5f, 0.5f);
-
+    //*/
 
     const float2    v   = make_float2(hmd_scale_in.x * (posFloat.x - hmd_lens_center.x), hmd_scale_in.y * (posFloat.y - hmd_lens_center.y));
     const float     rr  = v.x*v.x + v.y*v.y;
@@ -234,13 +235,18 @@ __global__ void hmd_warp(Image<uchar4> out, const Image<uchar4> view, const int 
     const float2    vOut = make_float2(hmd_scale_out.x * v.x * product + hmd_lens_center.x, hmd_scale_out.y * v.y * product + hmd_lens_center.y);
 
     uint2 posOut = make_uint2(uint(vOut.x*640), uint(vOut.y*800));
-    if (eye == 1)
+    if (eye == 1) {
         posOut.x += 640;
+        if (posOut.x < 1280 && posOut.y < 800 && posOut.x > 639)
+            out[posOut] = view.el();
+    } else {
+        if (posOut.x < 640 && posOut.y < 800)
+            out[posOut] = view.el();
+    }
 
-    out[posOut] = view.el();
 }
 
 void renderBarrelWindow(Image<uchar4> out, const Image<uchar4> & view, const int eye){
-    dim3 block(32,16);
+    dim3 block(16,16);
     hmd_warp<<<divup(view.size, block), block>>>(out, view, eye);
 }
