@@ -205,3 +205,42 @@ void renderInput( Image<float3> pos3D, Image<float3> normal, Image<float> depth,
     dim3 block(32,16);
     raycastInput<<<divup(pos3D.size, block), block>>>(pos3D, normal, depth, volume, view, nearPlane, farPlane, step, largestep);
 }
+
+__global__ void hmd_warp(Image<uchar4> out, const Image<uchar4> view, const int eye) {
+    //float2 lensCenterLeft = make_float2(0.5f + 0.25f * 0.5f, 0.5f);
+    //float2 lensCenterRight = make_float2(0.5f - 0.25f * 0.5f, 0.5f);
+
+    float scaleFactor = 0.7f;
+    float2 hmd_scale_out = make_float2((0.5/2.0f) * scaleFactor, (1.0f/2.0f) * scaleFactor * 0.5f);
+    float2 hmd_scale_in = make_float2(2.0f/0.5f, 2.0f/0.5f);
+    float4 hmd_warp_param = make_float4(1.00f, 0.22f, 0.24f, 0.00f); // these should come from the OVR SDK
+
+    const uint2 pos = thr2pos2();
+    int2 posS = make_int2(pos.x, pos.y);
+    float2 posFloat = make_float2(float(posS.x)/1280.0f, float(posS.y)/800.0f);
+
+    float2 hmd_lens_center;
+
+    if (eye == 1)
+        hmd_lens_center = make_float2(0.5f - 0.25f * 0.5f, 0.5f);
+    else
+        hmd_lens_center = make_float2(0.5f + 0.25f * 0.5f, 0.5f);
+
+
+    const float2    v   = make_float2(hmd_scale_in.x * (posFloat.x - hmd_lens_center.x), hmd_scale_in.y * (posFloat.y - hmd_lens_center.y));
+    const float     rr  = v.x*v.x + v.y*v.y;
+    const float4    r   = make_float4(1, rr, rr*rr, rr*rr*rr);
+    const float     product = hmd_warp_param.x*r.x + hmd_warp_param.y*r.y + hmd_warp_param.z*r.z + hmd_warp_param.w*r.w;
+    const float2    vOut = make_float2(hmd_scale_out.x * v.x * product + hmd_lens_center.x, hmd_scale_out.y * v.y * product + hmd_lens_center.y);
+
+    uint2 posOut = make_uint2(uint(vOut.x*640), uint(vOut.y*800));
+    if (eye == 1)
+        posOut.x += 640;
+
+    out[posOut] = view.el();
+}
+
+void renderBarrelWindow(Image<uchar4> out, const Image<uchar4> & view, const int eye){
+    dim3 block(32,16);
+    hmd_warp<<<divup(view.size, block), block>>>(out, view, eye);
+}
