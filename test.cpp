@@ -52,6 +52,8 @@ Image<float3, HostDevice> vertex, normal;
 Image<float, HostDevice> depth;
 Image<uchar4, HostDevice> rgb;
 
+
+int2 outputSize = make_int2(1280, 800);
 int counter = 0;
 bool benchmark = false;
 
@@ -62,7 +64,7 @@ void display(void) {
     const uint2 imageSize = kfusion.configuration.inputSize;
 
     const double start = Stats.start();
-    renderInput(vertex.getDeviceImage(), normal.getDeviceImage(), depth.getDeviceImage(), reference, toMatrix4( trans * rot * preTrans ) * getInverseCameraMatrix(kfusion.configuration.camera), kfusion.configuration.nearPlane, kfusion.configuration.farPlane, kfusion.configuration.stepSize(), 0.01 );
+    renderInput(vertex.getDeviceImage(), normal.getDeviceImage(), depth.getDeviceImage(), reference, toMatrix4( trans * rot * preTrans ) * getInverseCameraMatrix(kfusion.configuration.camera), kfusion.configuration.nearPlane, kfusion.configuration.farPlane, kfusion.configuration.stepSize(), 0.01, outputSize);
     cudaDeviceSynchronize();
     Stats.sample("ground raycast");
     Stats.sample("ground copy");
@@ -112,7 +114,7 @@ void display(void) {
 
     Stats.sample("total track", Stats.get_time() - track_start, PerfStats::TIME);
 
-    renderInput(vertex.getDeviceImage(), normal.getDeviceImage(), depth.getDeviceImage(), kfusion.integration,  kfusion.pose * getInverseCameraMatrix(kfusion.configuration.camera), kfusion.configuration.nearPlane, kfusion.configuration.farPlane, kfusion.configuration.stepSize(), 0.7 * kfusion.configuration.mu );
+    renderInput(vertex.getDeviceImage(), normal.getDeviceImage(), depth.getDeviceImage(), kfusion.integration,  kfusion.pose * getInverseCameraMatrix(kfusion.configuration.camera), kfusion.configuration.nearPlane, kfusion.configuration.farPlane, kfusion.configuration.stepSize(), 0.7 * kfusion.configuration.mu, outputSize);
     cudaDeviceSynchronize();
     Stats.sample("view raycast");
     Stats.sample("view copy");
