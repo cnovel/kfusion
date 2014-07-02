@@ -494,33 +494,55 @@ __global__ void trackAndReduce( float * out, const Image<float3> inVertex, const
 __device__ __forceinline__ float4 raycast( const Volume volume, const int2 pos, const Matrix4 view, const float nearPlane, const float farPlane, const float step, const float largestep){
     const float3 origin = view.get_translation();
     float3 direction;
-    /*
-    if (pos.x < 0 && pos.y < 0) {
-        int posX = 640 - pos.x;
-        int posY = 480 - pos.y;
-        
-        float3 dirCentre = rotate(view, make_float3(320, 240, 1.f));
-        float3 dirPositive = rotate(view, make_float3(posX, posY, 1.f));
 
-        float norm = sqrt(dirCentre.x*dirCentre.x + dirCentre.y*dirCentre.y + dirCentre.z*dirCentre.z);
+    direction = rotate(view, make_float3(pos.x, pos.y, 1.f));
 
-        dirCentre.x /= norm;
-        dirCentre.y /= norm;
-        dirCentre.z /= norm;
+    // intersect ray with a box
+    // http://www.siggraph.org/education/materials/HyperGraph/raytrace/rtinter3.htm
+    // compute intersection of ray with all six bbox planes
+    const float3 invR = make_float3(1.0f) / direction;
+    const float3 tbot = -1 * invR * origin;
+    const float3 ttop = invR * (volume.dim - origin);
 
-        float3 R1 = make_float3(2*dirCentre.x*dirCentre.x - 1, 2*dirCentre.x*dirCentre.y, 2*dirCentre.x*dirCentre.z);
-        float3 R2 = make_float3(2*dirCentre.x*dirCentre.y, 2*dirCentre.y*dirCentre.y - 1, 2*dirCentre.y*dirCentre.z);
-        float3 R3 = make_float3(2*dirCentre.x*dirCentre.z, 2*dirCentre.y*dirCentre.z, 2*dirCentre.z*dirCentre.z - 1);
+    // re-order intersections to find smallest and largest on each axis
+    const float3 tmin = fminf(ttop, tbot);
+    const float3 tmax = fmaxf(ttop, tbot);
 
-        direction = make_float3(dot(R1, dirPositive), dot(R2, dirPositive), dot(R3, dirPositive));
+    // find the largest tmin and the smallest tmax
+    const float largest_tmin = fmaxf(fmaxf(tmin.x, tmin.y), fmaxf(tmin.x, tmin.z));
+    const float smallest_tmax = fminf(fminf(tmax.x, tmax.y), fminf(tmax.x, tmax.z));
 
-    //else if (pos.x < 0 && pos.y >= 0) {
+    // check against near and far plane
+    const float tnear = fmaxf(largest_tmin, nearPlane);
+    const float tfar = fminf(smallest_tmax, farPlane);
 
-    //}
+    if(tnear < tfar) {
+        // first walk with largesteps until we found a hit
+        float t = tnear;
+        float stepsize = largestep;
+        float f_t = volume.interp(origin + direction * t);
+        float f_tt = 0;
+        if( f_t > 0){     // ups, if we were already in it, then don't render anything here
+            for(; t < tfar; t += stepsize){
+                f_tt = volume.interp(origin + direction * t);
+                if(f_tt < 0)                               // got it, jump out of inner loop
+                    break;
+                if(f_tt < 0.8f)                            // coming closer, reduce stepsize
+                    stepsize = step;
+                f_t = f_tt;
+            }
+            if(f_tt < 0){                               // got it, calculate accurate intersection
+                t = t + stepsize * f_tt / (f_t - f_tt);
+                return make_float4(origin + direction * t, t);
+            }
+        }
+    }
+    return make_float4(0);
+}
 
-    } else {//*/
-        direction = rotate(view, make_float3(pos.x, pos.y, 1.f));
-    //}
+
+__device__ __forceinline__ float4 raycastDirPos( const Volume volume, const Matrix4 view, const float nearPlane, const float farPlane, const float step, const float largestep, const float3 direction){
+    const float3 origin = view.get_translation();
 
     // intersect ray with a box
     // http://www.siggraph.org/education/materials/HyperGraph/raytrace/rtinter3.htm
