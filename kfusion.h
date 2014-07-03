@@ -541,8 +541,9 @@ __device__ __forceinline__ float4 raycast( const Volume volume, const int2 pos, 
 }
 
 
-__device__ __forceinline__ float4 raycastDirPos( const Volume volume, const Matrix4 view, const float nearPlane, const float farPlane, const float step, const float largestep, const float3 direction){
+__device__ __forceinline__ float4 raycastDirPos( const Volume volume, const Matrix4 view, const float nearPlane, const float farPlane, const float step, const float largestep, const float3 dir){
     const float3 origin = view.get_translation();
+    float3 direction = rotate(view, dir);
 
     // intersect ray with a box
     // http://www.siggraph.org/education/materials/HyperGraph/raytrace/rtinter3.htm
@@ -562,6 +563,7 @@ __device__ __forceinline__ float4 raycastDirPos( const Volume volume, const Matr
     // check against near and far plane
     const float tnear = fmaxf(largest_tmin, nearPlane);
     const float tfar = fminf(smallest_tmax, farPlane);
+
 
     if(tnear < tfar) {
         // first walk with largesteps until we found a hit

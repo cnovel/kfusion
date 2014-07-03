@@ -99,8 +99,6 @@ void display(void){
         pose.Rotation.GetEulerAngles<OVR::Axis_Y, OVR::Axis_X, OVR::Axis_Z>(&yYaw, &xEyePitch, &zEyeRoll);
         yYaw = -yYaw;
         zEyeRoll = -zEyeRoll;
-
-        quatPose = OVR::Matrix4f(pose.Rotation);
     }
 
     static bool integrate = true;
@@ -124,6 +122,7 @@ void display(void){
     static int count = 4;
     Matrix4 cameraView = getInverseCameraMatrix(kfusion.configuration.camera * 2);
     Matrix4 ovrPose = kfusion.pose;
+    //ovrPose.data[2].w -= 0.3;
     if (ovr_sensor_tracking) {
         ovrPose.data[0].x = cos(yYaw)*cos(zEyeRoll) + sin(yYaw)*sin(xEyePitch)*sin(zEyeRoll);
         ovrPose.data[0].y = cos(zEyeRoll)*sin(yYaw)*sin(xEyePitch) - cos(yYaw)*sin(zEyeRoll);
@@ -136,18 +135,6 @@ void display(void){
         ovrPose.data[2].x = cos(yYaw)*sin(xEyePitch)*sin(zEyeRoll) - cos(zEyeRoll)*sin(yYaw);
         ovrPose.data[2].y = sin(yYaw)*sin(zEyeRoll) + cos(yYaw)*cos(zEyeRoll)*sin(xEyePitch);
         ovrPose.data[2].z = cos(yYaw)*cos(xEyePitch);
-
-        // ovrPose.data[0].x = quatPose.M[0][0];
-        // ovrPose.data[0].y = quatPose.M[0][1];
-        // ovrPose.data[0].z = quatPose.M[0][2];
-        
-        // ovrPose.data[1].x = quatPose.M[1][0];
-        // ovrPose.data[1].y = quatPose.M[1][1];
-        // ovrPose.data[1].z = quatPose.M[1][2];
-        
-        // ovrPose.data[2].x = quatPose.M[2][0];
-        // ovrPose.data[2].y = quatPose.M[2][1];
-        // ovrPose.data[2].z = quatPose.M[2][2];
     }
 
     Matrix4 leftEye = cameraView;
@@ -185,6 +172,7 @@ void display(void){
         ////renderBarrelWindow(barrel.getDeviceImage(), viewLeft, 0);
         ////renderBarrelWindow(barrel.getDeviceImage(), viewRight, 1);
         //renderBarrel(barrel.getDeviceImage(), viewLeft, viewRight);
+        //cout << ovrPose << endl;
         renderOculusCam(barrel.getDeviceImage(), kfusion.integration, rgbImage.getDeviceImage(), ovrPose, getCameraMatrix(2*kfusion.configuration.camera) * inverse(kfusion.pose), kfusion.configuration.nearPlane, kfusion.configuration.farPlane, kfusion.configuration.stepSize(), 0.75 * kfusion.configuration.mu, lux, ambient);
         glDrawPixels(barrel);
     } else {
@@ -315,7 +303,7 @@ int main(int argc, char ** argv) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE );
     glutInitWindowSize(1280, 800);
-    glutCreateWindow("kfusion");
+    glutCreateWindow("OFusion");
 
     kfusion.Init(config);
 

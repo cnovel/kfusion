@@ -331,37 +331,15 @@ __global__ void OculusCam(Image<uchar4> out, const Volume volume, const Image<uc
     ray.x /= rayNorm;
     ray.y /= rayNorm;
     ray.z /= rayNorm;
-    //float3 position = make_float3(sx * IPD_by2, 0, 0);
-    float3 position = make_float3(0, 0, 0);
-    float3 vLeft1;
-    float3 vLeft2;
-    float3 vLeft3;
 
     Matrix4 viewLeft = view;
     Matrix4 viewRight = view;
 
-    vLeft1 = make_float3(viewLeft.data[0].x, viewLeft.data[0].y, viewLeft.data[0].z);
-    vLeft2 = make_float3(viewLeft.data[1].x, viewLeft.data[1].y, viewLeft.data[1].z);
-    vLeft3 = make_float3(viewLeft.data[2].x, viewLeft.data[2].y, viewLeft.data[2].z);
-
-    float3 vRight1;
-    float3 vRight2;
-    float3 vRight3;
-    vRight1 = make_float3(viewRight.data[0].x, viewRight.data[0].y, viewRight.data[0].z);
-    vRight2 = make_float3(viewRight.data[1].x, viewRight.data[1].y, viewRight.data[1].z);
-    vRight3 = make_float3(viewRight.data[2].x, viewRight.data[2].y, viewRight.data[2].z);
-
     float4 hit;
     if (i == 0) {
-        // ray.x = vLeft1.x * ray.x + vLeft1.y * ray.y + vLeft1.z * ray.z;
-        // ray.y = vLeft2.x * ray.x + vLeft2.y * ray.y + vLeft2.z * ray.z;
-        // ray.z = vLeft3.x * ray.x + vLeft3.y * ray.y + vLeft3.z * ray.z;
         hit = raycastDirPos(volume, viewLeft, nearPlane, farPlane, step, largestep, ray);
     }
     else {
-        // ray.x = vRight1.x * ray.x + vRight1.y * ray.y + vRight1.z * ray.z;
-        // ray.y = vRight2.x * ray.x + vRight2.y * ray.y + vRight2.z * ray.z;
-        // ray.z = vRight3.x * ray.x + vRight3.y * ray.y + vRight3.z * ray.z;
         hit = raycastDirPos(volume, viewRight, nearPlane, farPlane, step, largestep, ray);
     }
     
@@ -383,15 +361,6 @@ __global__ void OculusCam(Image<uchar4> out, const Volume volume, const Image<uc
         normal = make_float3(0);
         //depth = 0;
     }
-
-    // if(normal.x == -2.0f)
-    //     out.el() = make_uchar4(0,0,0,255);
-    // else {
-    //     const float3 diff = normalize(light - pos3D);
-    //     const float dir = fmaxf(dot(normal, diff), 0.f);
-    //     const float3 col = clamp(make_float3(dir) + ambient, 0.f, 1.f) * 255;
-    //     out.el() = make_uchar4(col.x, col.y, col.z, 255);
-    // }
 
     if(normal.x == -2.0f)
         out.el() = make_uchar4(0,0,0,255);
