@@ -24,9 +24,11 @@ Install
 Tweak the Makefile for your system. I tried to be as clear as possible. Then execute **launch.sh**. It will compile and launch the program. Please check that your Kinect and Rift are plugged in.
 
 
-Todo
------
-- Deformation of the 3D image for display in the Rift
+To do
+----------
+- ~~Deformation of the 3D image for display in the Rift~~ done
+- Calibration of the Rift and the Kinect
+- Add augmented reality assets
 
 Contributors
 -------------
