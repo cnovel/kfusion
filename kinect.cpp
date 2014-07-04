@@ -51,7 +51,7 @@ using namespace std;
 using namespace TooN;
 
 KFusion kfusion;
-Image<uchar4, HostDevice> lightScene, trackModel, lightModel, texModel, viewLeft, viewRight, barrel;
+Image<uchar4, HostDevice> lightScene, trackModel, lightModel, viewLeft, viewRight, barrel;
 Image<uint16_t, HostDevice> depthImage[2];
 Image<uchar3, HostDevice> rgbImage;
 
@@ -72,11 +72,10 @@ bool render_texture = false;
 bool ovr_sensor_tracking = false;
 bool ovr_mode = false;
 
-Image<float3, Device> pos, normals, posRight, normalsRight, posLeft, normalsLeft;
-Image<float, Device> dep, depRight, depLeft;
+Image<float3, Device> posRight, normalsRight, posLeft, normalsLeft;
+Image<float, Device> depRight, depLeft;
 
 SE3<float> preTrans, trans, rot(makeVector(0.0, 0, 0, 0, 0, 0));
-bool redraw_big_view = false;
 
 // OVR Object
 ovrHmd hmd;
@@ -91,11 +90,9 @@ void display(void){
     float xEyePitch = 0;
     float zEyeRoll = 0;
 
-    OVR::Matrix4f quatPose;
-
     if (ss.StatusFlags & (ovrStatus_OrientationTracked)) {
+        // Obtain the orientation of the HMD
         OVR::Transformf pose = ss.Recorded.Pose;
-
         pose.Rotation.GetEulerAngles<OVR::Axis_Y, OVR::Axis_X, OVR::Axis_Z>(&yYaw, &xEyePitch, &zEyeRoll);
         yYaw = -yYaw;
         zEyeRoll = -zEyeRoll;
@@ -119,23 +116,11 @@ void display(void){
             reset = false;
     }
 
-    static int count = 4;
     Matrix4 cameraView = getInverseCameraMatrix(kfusion.configuration.camera * 2);
     Matrix4 ovrPose = kfusion.pose;
-    //ovrPose.data[2].w -= 0.3;
-    if (ovr_sensor_tracking) {
-        ovrPose.data[0].x = cos(yYaw)*cos(zEyeRoll) + sin(yYaw)*sin(xEyePitch)*sin(zEyeRoll);
-        ovrPose.data[0].y = cos(zEyeRoll)*sin(yYaw)*sin(xEyePitch) - cos(yYaw)*sin(zEyeRoll);
-        ovrPose.data[0].z = cos(xEyePitch)*sin(yYaw);
-        
-        ovrPose.data[1].x = cos(xEyePitch)*sin(zEyeRoll);
-        ovrPose.data[1].y = cos(xEyePitch)*cos(zEyeRoll);
-        ovrPose.data[1].z = - sin(xEyePitch);
-        
-        ovrPose.data[2].x = cos(yYaw)*sin(xEyePitch)*sin(zEyeRoll) - cos(zEyeRoll)*sin(yYaw);
-        ovrPose.data[2].y = sin(yYaw)*sin(zEyeRoll) + cos(yYaw)*cos(zEyeRoll)*sin(xEyePitch);
-        ovrPose.data[2].z = cos(yYaw)*cos(xEyePitch);
-    }
+    
+    if (ovr_sensor_tracking)
+        viewMatrixUpdate(ovrPose, yYaw, zEyeRoll, xEyePitch);
 
     Matrix4 leftEye = cameraView;
     Matrix4 rightEye = cameraView;
@@ -145,35 +130,26 @@ void display(void){
 
     float3 lux = make_float3(ovrPose.data[0].w, ovrPose.data[1].w, ovrPose.data[2].w);
 
-    if((count >= 0 || redraw_big_view) && !ovr_mode){ 
-        //renderInput( pos, normals, dep, kfusion.integration, toMatrix4( trans * rot * preTrans ) * getInverseCameraMatrix(kfusion.configuration.camera * 2), kfusion.configuration.nearPlane, kfusion.configuration.farPlane, kfusion.configuration.stepSize(), 0.75 * kfusion.configuration.mu);
-        
+    if (!ovr_mode) {
         renderInput( posLeft, normalsLeft, depLeft, kfusion.integration, ovrPose * leftEye, kfusion.configuration.nearPlane, kfusion.configuration.farPlane, kfusion.configuration.stepSize(), 0.75 * kfusion.configuration.mu, outputSize);
         renderInput( posRight, normalsRight, depRight, kfusion.integration, ovrPose * rightEye, kfusion.configuration.nearPlane, kfusion.configuration.farPlane, kfusion.configuration.stepSize(), 0.75 * kfusion.configuration.mu, outputSize);
-        count = 0;
-        redraw_big_view = false;
-    } else
-        count++;
-    if(render_texture) {
-        //renderTexture( texModel.getDeviceImage(), pos, normals, rgbImage.getDeviceImage(), getCameraMatrix(2*kfusion.configuration.camera) * inverse(kfusion.pose), light);
 
-        renderTexture(viewLeft.getDeviceImage(), posLeft, normalsLeft, rgbImage.getDeviceImage(), getCameraMatrix(2*kfusion.configuration.camera) * inverse(kfusion.pose), lux);
-        renderTexture(viewRight.getDeviceImage(), posRight, normalsRight, rgbImage.getDeviceImage(), getCameraMatrix(2*kfusion.configuration.camera) * inverse(kfusion.pose), light);
+        if(render_texture) {
+            renderTexture(viewLeft.getDeviceImage(), posLeft, normalsLeft, rgbImage.getDeviceImage(), getCameraMatrix(2*kfusion.configuration.camera) * inverse(kfusion.pose), lux);
+            renderTexture(viewRight.getDeviceImage(), posRight, normalsRight, rgbImage.getDeviceImage(), getCameraMatrix(2*kfusion.configuration.camera) * inverse(kfusion.pose), light);
+        } else {
+            renderLight(viewLeft.getDeviceImage(), posLeft, normalsLeft, lux, ambient);
+            renderLight(viewRight.getDeviceImage(), posRight, normalsRight, lux, ambient);
+        }
     } else {
-        //renderLight( texModel.getDeviceImage(), pos, normals, light, ambient);
-        renderLight(viewLeft.getDeviceImage(), posLeft, normalsLeft, lux, ambient);
-        renderLight(viewRight.getDeviceImage(), posRight, normalsRight, lux, ambient);
+        renderOculusCam(barrel.getDeviceImage(), kfusion.integration, rgbImage.getDeviceImage(), ovrPose, getCameraMatrix(2*kfusion.configuration.camera) * inverse(kfusion.pose), kfusion.configuration.nearPlane, kfusion.configuration.farPlane, kfusion.configuration.stepSize(), 0.75 * kfusion.configuration.mu, lux, ambient);
     }
+
     cudaDeviceSynchronize();
 
     glClear(GL_COLOR_BUFFER_BIT);
     glRasterPos2i(0, 0);
     if (ovr_mode){
-        ////renderBarrelWindow(barrel.getDeviceImage(), viewLeft, 0);
-        ////renderBarrelWindow(barrel.getDeviceImage(), viewRight, 1);
-        //renderBarrel(barrel.getDeviceImage(), viewLeft, viewRight);
-        //cout << ovrPose << endl;
-        renderOculusCam(barrel.getDeviceImage(), kfusion.integration, rgbImage.getDeviceImage(), ovrPose, getCameraMatrix(2*kfusion.configuration.camera) * inverse(kfusion.pose), kfusion.configuration.nearPlane, kfusion.configuration.farPlane, kfusion.configuration.stepSize(), 0.75 * kfusion.configuration.mu, lux, ambient);
         glDrawPixels(barrel);
     } else {
         glDrawPixels(viewLeft);
@@ -243,7 +219,6 @@ void specials(int key, int x, int y){
         rot *= SE3<float>(makeVector(0.0, 0, 0, 0.1, 0, 0));
         break;
     }
-    redraw_big_view = true;
 }
 
 void reshape(int width, int height){
@@ -275,7 +250,7 @@ int main(int argc, char ** argv) {
     // everything else is derived from that.
     // config.volumeSize = make_uint3(64);
     // config.volumeSize = make_uint3(128);
-    config.volumeSize = make_uint3(512);
+    config.volumeSize = make_uint3(640);
 
     // these are physical dimensions in meters
     config.volumeDimensions = make_float3(size);
@@ -314,7 +289,6 @@ int main(int argc, char ** argv) {
 
     // render buffers
     lightScene.alloc(config.inputSize), trackModel.alloc(config.inputSize), lightModel.alloc(config.inputSize);
-    pos.alloc(make_uint2(640, 480)), normals.alloc(make_uint2(640, 480)), dep.alloc(make_uint2(640, 480)), texModel.alloc(make_uint2(640, 480));
     viewLeft.alloc(make_uint2(sizeX, sizeY)), viewRight.alloc(make_uint2(sizeX, sizeY));
     barrel.alloc(make_uint2(1280, 800));
 
