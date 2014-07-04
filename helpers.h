@@ -94,6 +94,5 @@ inline void glDrawPixels( const Image<T, A> & i ){
     ::glDrawPixels(i.size.x, i.size.y, gl<T>::format, gl<T>::type, i.data());
 }
 
-void renderBarrel(Image<uchar4> out, const Image<uchar4> & viewLeft, const Image<uchar4> & viewRight);
 void renderOculusCam(Image<uchar4> out, const Volume volume, const Image<uchar3> & texture, const Matrix4 viewLeft, const Matrix4 viewRight, const float nearPlane, const float farPlane, const float step, const float largestep, const float3 light, const float3 ambient);
 #endif // HELPERS_H

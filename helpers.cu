@@ -202,99 +202,9 @@ __global__ void raycastInput( Image<float3> pos3D, Image<float3> normal, Image<f
     }
 }
 
-
 void renderInput( Image<float3> pos3D, Image<float3> normal, Image<float> depth, const Volume volume, const Matrix4 view, const float nearPlane, const float farPlane, const float step, const float largestep, const int2 outputSize){
     dim3 block(32,16);
     raycastInput<<<divup(pos3D.size, block), block>>>(pos3D, normal, depth, volume, view, nearPlane, farPlane, step, largestep, outputSize);
-}
-
-__global__ void hmd_barrel_bis(Image<uchar4> out, const Image<uchar4> viewLeft, const Image<uchar4> viewRight) {
-    int h = 800;
-    int w = 1280;
-
-    float hmd_zoom = 0.95f;
-    int half = w/2;
-
-    float2 hmd_scale_out = make_float2(hmd_zoom * half, hmd_zoom * h);
-    float2 hmd_scale_in = make_float2(1.0f/half, 1.0f/h);
-    float4 hmd_warp_param = make_float4(1.00f, 0.22f, 0.24f, 0.00f); // these should come from the OVR SDK
-
-    const uint2 pos = thr2pos2();
-    int2 posS = make_int2(pos.x, pos.y);
-
-    if (posS.x < half) {
-        int2 hmd_lens_center = make_int2(half/2, h/2);
-        const float2    v   = make_float2(hmd_scale_in.x * (posS.x - hmd_lens_center.x), hmd_scale_in.y * (posS.y - hmd_lens_center.y));
-        const float     rr  = v.x*v.x + v.y*v.y;
-        const float4    r   = make_float4(1, rr, rr*rr, rr*rr*rr);
-        const float     product = hmd_warp_param.x*r.x + hmd_warp_param.y*r.y + hmd_warp_param.z*r.z + hmd_warp_param.w*r.w;
-        const float2    vOut = make_float2(hmd_scale_out.x * v.x * product + hmd_lens_center.x, hmd_scale_out.y * v.y * product + hmd_lens_center.y);
-        const int2      posOutS = make_int2(int(vOut.x), int(vOut.y));
-        if (posOutS.x >= 0 && posOutS.x < 640 && posOutS.y >= 0 && posOutS.y < 800) {
-            uint2 posOut = make_uint2(uint(posOutS.x), uint(posOutS.y));
-            out.el() = viewLeft[posOut];
-        }
-    } else {
-        int2 hmd_lens_center = make_int2(half/2 + half, h/2);
-        const float2    v   = make_float2(hmd_scale_in.x * (posS.x - hmd_lens_center.x), hmd_scale_in.y * (posS.y - hmd_lens_center.y));
-        const float     rr  = v.x*v.x + v.y*v.y;
-        const float4    r   = make_float4(1, rr, rr*rr, rr*rr*rr);
-        const float     product = hmd_warp_param.x*r.x + hmd_warp_param.y*r.y + hmd_warp_param.z*r.z + hmd_warp_param.w*r.w;
-        const float2    vOut = make_float2(hmd_scale_out.x * v.x * product + hmd_lens_center.x, hmd_scale_out.y * v.y * product + hmd_lens_center.y);
-        const int2      posOutS = make_int2(int(vOut.x - half), int(vOut.y));
-        if (posOutS.x >= 0 && posOutS.x < 640 && posOutS.y >= 0 && posOutS.y < 800) {
-            uint2 posOut = make_uint2(uint(posOutS.x), uint(posOutS.y));
-            out.el() = viewRight[posOut];
-        }
-    }
-
-}
-
-__global__ void hmd_barrel(Image<uchar4> out, const Image<uchar4> viewLeft, const Image<uchar4> viewRight) {
-    //float2 lensCenterLeft = make_float2(0.5f + 0.25f * 0.5f, 0.5f);
-    //float2 lensCenterRight = make_float2(0.5f - 0.25f * 0.5f, 0.5f);
-
-    float scaleFactor = 0.7f;
-    float2 hmd_scale_out = make_float2((0.5/2.0f) * scaleFactor, (1.0f/2.0f) * scaleFactor * 0.5f);
-    float2 hmd_scale_in = make_float2(4.0f, 4.0f);
-    float4 hmd_warp_param = make_float4(1.00f, 0.22f, 0.24f, 0.00f); // these should come from the OVR SDK
-
-    const uint2 pos = thr2pos2();
-    int2 posS = make_int2(pos.x, pos.y);
-
-    float2 hmd_lens_center = make_float2(0.5f, 0.5f);
-    
-    if (posS.x > 639) {
-        posS.x -= 640;
-        //hmd_lens_center = make_float2(0.5f - 0.25f * 0.5f, 0.5f);
-    } else {
-        //hmd_lens_center = make_float2(0.5f + 0.25f * 0.5f, 0.5f);
-    }
-
-    float2 posFloat = make_float2(float(posS.x)/640.0f, float(posS.y)/800.0f);
-
-    //*/
-
-    const float2    v   = make_float2(hmd_scale_in.x * (posFloat.x - hmd_lens_center.x), hmd_scale_in.y * (posFloat.y - hmd_lens_center.y));
-    const float     rr  = v.x*v.x + v.y*v.y;
-    const float4    r   = make_float4(1, rr, rr*rr, rr*rr*rr);
-    const float     product = hmd_warp_param.x*r.x + hmd_warp_param.y*r.y + hmd_warp_param.z*r.z + hmd_warp_param.w*r.w;
-    const float2    vOut = make_float2(hmd_scale_out.x * v.x * product + hmd_lens_center.x, hmd_scale_out.y * v.y * product + hmd_lens_center.y);
-
-    if (vOut.x >= 0 && vOut.x < 1 && vOut.y >= 0 && vOut.y < 1) {
-        uint2 posOut = make_uint2(uint(vOut.x*1280), uint(vOut.y*800));
-
-        if (pos.x > 639)
-            out.el() = viewRight[posOut];
-        else
-            out.el() = viewLeft[posOut];
-    }
-
-}
-
-void renderBarrel(Image<uchar4> out, const Image<uchar4> & viewLeft, const Image<uchar4> & viewRight){
-    dim3 block(32,16);
-    hmd_barrel_bis<<<divup(out.size, block), block>>>(out, viewLeft, viewRight);
 }
 
 __global__ void OculusCam(Image<uchar4> out, const Volume volume, const Image<uchar3> texture, const Matrix4 view, const Matrix4 texproj, const float nearPlane, const float farPlane, const float step, const float largestep, const float3 light, const float3 ambient) {
@@ -332,24 +242,14 @@ __global__ void OculusCam(Image<uchar4> out, const Volume volume, const Image<uc
     ray.y /= rayNorm;
     ray.z /= rayNorm;
 
-    Matrix4 viewLeft = view;
-    Matrix4 viewRight = view;
-
     float4 hit;
-    if (i == 0) {
-        hit = raycastDirPos(volume, viewLeft, nearPlane, farPlane, step, largestep, ray);
-    }
-    else {
-        hit = raycastDirPos(volume, viewRight, nearPlane, farPlane, step, largestep, ray);
-    }
-    
     float3 pos3D;
     float3 normal;
-    //float depth;
+
+    hit = raycastDirPos(volume, view, nearPlane, farPlane, step, largestep, ray);
 
     if(hit.w > 0){
         pos3D = make_float3(hit);
-        //depth = hit.w;
         float3 surfNorm = volume.grad(make_float3(hit));
         if(length(surfNorm) == 0){
             normal.x = -2;
@@ -359,7 +259,6 @@ __global__ void OculusCam(Image<uchar4> out, const Volume volume, const Image<uc
     } else {
         pos3D = make_float3(0);
         normal = make_float3(0);
-        //depth = 0;
     }
 
     if(normal.x == -2.0f)
