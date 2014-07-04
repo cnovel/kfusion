@@ -95,4 +95,6 @@ inline void glDrawPixels( const Image<T, A> & i ){
 }
 
 void renderOculusCam(Image<uchar4> out, const Volume volume, const Image<uchar3> & texture, const Matrix4 viewLeft, const Matrix4 viewRight, const float nearPlane, const float farPlane, const float step, const float largestep, const float3 light, const float3 ambient);
+void viewMatrixUpdate(Matrix4 & ovrPose, float yYaw, float zEyeRoll, float xEyePitch);
+
 #endif // HELPERS_H

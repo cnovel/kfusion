@@ -282,3 +282,17 @@ void renderOculusCam(Image<uchar4> out, const Volume volume, const Image<uchar3>
     dim3 block(32,16);
     OculusCam<<<divup(out.size, block), block>>>(out, volume, texture, view, texproj, nearPlane, farPlane, step, largestep, light, ambient);
 }
+
+void viewMatrixUpdate(Matrix4 & ovrPose, float yYaw, float zEyeRoll, float xEyePitch){
+    ovrPose.data[0].x = cos(yYaw)*cos(zEyeRoll) + sin(yYaw)*sin(xEyePitch)*sin(zEyeRoll);
+    ovrPose.data[0].y = cos(zEyeRoll)*sin(yYaw)*sin(xEyePitch) - cos(yYaw)*sin(zEyeRoll);
+    ovrPose.data[0].z = cos(xEyePitch)*sin(yYaw);
+        
+    ovrPose.data[1].x = cos(xEyePitch)*sin(zEyeRoll);
+    ovrPose.data[1].y = cos(xEyePitch)*cos(zEyeRoll);
+    ovrPose.data[1].z = - sin(xEyePitch);
+        
+    ovrPose.data[2].x = cos(yYaw)*sin(xEyePitch)*sin(zEyeRoll) - cos(zEyeRoll)*sin(yYaw);
+    ovrPose.data[2].y = sin(yYaw)*sin(zEyeRoll) + cos(yYaw)*cos(zEyeRoll)*sin(xEyePitch);
+    ovrPose.data[2].z = cos(yYaw)*cos(xEyePitch);
+}
