@@ -167,7 +167,7 @@ struct Volume {
     float3 dim;
     short2 * data;
 
-    Volume() { size = make_uint3(0); dim = make_float3(1); data = NULL; }
+    Volume() { size = make_uint3(0); dim = make_float3(1); data = NULL;}
 
     __device__ float2 operator[]( const uint3 & pos ) const {
         const short2 d = data[pos.x + pos.y * size.x + pos.z * size.x * size.y];

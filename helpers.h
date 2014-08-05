@@ -25,8 +25,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define HELPERS_H
 
 #include "kfusion.h"
+#include "track.h"
 
 #include <TooN/se3.h>
+#include <algorithm>
+#include <vector>
+
+#include <thrust/device_vector.h>
 
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -94,7 +99,11 @@ inline void glDrawPixels( const Image<T, A> & i ){
     ::glDrawPixels(i.size.x, i.size.y, gl<T>::format, gl<T>::type, i.data());
 }
 
-void renderOculusCam(Image<uchar4> out, const Volume volume, const Image<uchar3> & texture, const Matrix4 viewLeft, const Matrix4 viewRight, const float nearPlane, const float farPlane, const float step, const float largestep, const float3 light, const float3 ambient);
+void renderOculusCam(Image<uchar4> out, const Volume volume, const Image<uchar3> & texture, const Matrix4 viewLeft, const Matrix4 viewRight, const float nearPlane, const float farPlane, const float step, const float largestep, const float3 light, const Image<bool> & gridWroteOn);
 void viewMatrixUpdate(Matrix4 & ovrPose, float yYaw, float zEyeRoll, float xEyePitch);
+void drawSquare(Image<uchar3>& texture);
+void colorTrim(Image<uchar3>& texture, const float3 hsvToTrack);
 
+// void computeMapGPU(const Image<uchar3> & texture, char* mapPix, const float3 hsvToTrack);
+// void computeHeatMapGPU(char* mapPix, int* heatMap, int radius);
 #endif // HELPERS_H

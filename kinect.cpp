@@ -21,31 +21,7 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#include "kfusion.h"
-#include "helpers.h"
-#include "interface.h"
-#include "perfstats.h"
-
-// OVR include
-#include "LibOVR/Src/OVR_CAPI.h"
-#include "LibOVR/Src/OVR_SensorFusion.h"
-#include "LibOVR/Src/Kernel/OVR_Math.h"
-#include "LibOVR/Include/OVR.h"
-
-#include <iostream>
-#include <sstream>
-#include <iomanip>
-#include <cmath>
-#include <memory>
-
-#ifdef __APPLE__
-#include <GLUT/glut.h>
-#elif defined(WIN32)
-#define GLUT_NO_LIB_PRAGMA
-#include <glut.h>
-#else
-#include <GL/glut.h>
-#endif
+#include "mainIncludes.h"
 
 using namespace std;
 using namespace TooN;
@@ -82,6 +58,20 @@ ovrHmd hmd;
 ovrHmdDesc hmdDesc;
 float offset = 0.0f; //0.0325f
 
+// Color & 3D tracking
+float3 hsvToTrack;
+int2 curPos = make_int2(320,240);
+bool learn_color = false;
+bool tracking = false;
+int errorCount = 0;
+Image<bool, HostDevice> gridWroteOn;
+std::vector<int> vCubePositionsToClear;
+int resX = 1000; // you have to update the ones in helpers.cu
+int resY = 1000;
+int resZ = 1000;
+int noDepth = 0;
+vector<float> vLastTenDepths;
+
 void display(void){
 
     // OVR Sensor set up
@@ -105,6 +95,7 @@ void display(void){
     const double startProcessing = Stats.sample("kinect");
 
     kfusion.setKinectDeviceDepth(depthImage[GetKinectFrame()].getDeviceImage());
+    Image<uint16_t> rawDepth = depthImage[GetKinectFrame()].getDeviceImage();
 
     integrate = kfusion.Track();
 
@@ -130,19 +121,94 @@ void display(void){
 
     float3 lux = make_float3(ovrPose.data[0].w, ovrPose.data[1].w, ovrPose.data[2].w);
 
+    Image<uchar3> modImage = rgbImage.getDeviceImage();
+
+    if (learn_color) {
+        hsvToTrack = learnColor(modImage);
+        learn_color = false;
+        tracking = true;
+        cout << hsvToTrack.x << ", " << hsvToTrack.y << ", " << hsvToTrack.z << endl;
+    }
+
+    if (tracking) {
+        char map[50*50];
+        int heatmap[50*50];
+        int radius = 5;
+
+        computeMap(modImage, map, hsvToTrack, curPos);
+        computeHeatmap(map, heatmap, radius);
+        vector<uint2> heatPoints = findHeatPoints(heatmap, 2*radius);
+        curPos = newPosition(heatPoints, curPos);
+        if (curPos.x == -1) {
+            errorCount++;
+            // tracking = false;
+            // cout << "Tracking is lost !" << endl;
+            if (errorCount > 50) {
+                tracking = false;
+                cout << "Tracking is lost !" << endl;
+                errorCount = 0;
+                for(int i=0; i < vCubePositionsToClear.size(); i++)
+                    gridWroteOn[make_uint2(vCubePositionsToClear[i],0)] = false;
+                vCubePositionsToClear.clear();
+            }
+        }
+        else {
+            errorCount = 0;
+            drawPosition(modImage, curPos);
+            cudaDeviceSynchronize();
+            float medDepth = medianDepth(rawDepth, curPos, 3);
+            if(medDepth != -1) {
+                updateLastTenDepths(vLastTenDepths, medDepth);
+                medDepth = medianEstimation(vLastTenDepths);
+                Matrix4 transform = ovrPose*cameraView;
+                const float3 origin = transform.get_translation();
+                float3 direction = rotate(transform, make_float3(curPos.x, curPos.y, 1.f));
+                float dirNorm = sqrt(direction.x*direction.x + direction.y*direction.y + direction.z*direction.z);
+                direction.x /= dirNorm;
+                direction.y /= dirNorm;
+                direction.z /= dirNorm;
+
+                float3 penAbsPosition;
+                penAbsPosition.x = origin.x + medDepth*direction.x;
+                penAbsPosition.y = origin.y + medDepth*direction.y;
+                penAbsPosition.z = origin.z + medDepth*direction.z;
+
+                // cout << penAbsPosition.x << " " << penAbsPosition.y << " " << penAbsPosition.z << endl;
+                float gapThreshold = 0.0005;
+                int coordX = penAbsPosition.x*resX/5;
+                int coordY = penAbsPosition.y*resY/5;
+                int coordZ = penAbsPosition.z*resZ/5;
+                if(0 <= coordX && coordX < resX && 0 <= coordY && coordY < resY && 0 <= coordZ && coordZ < resZ) {
+                    if(vCubePositionsToClear.empty()){
+                        addNeighbours(gridWroteOn, vCubePositionsToClear, coordX, coordY, coordZ, resX, resY, resZ);
+                        //gridWroteOn[make_uint2(coordX+resX*coordY+resX*resY*coordZ,0)] = true;
+                        //vCubePositionsToClear.push_back(coordX+resX*coordY+resX*resY*coordZ);
+                    } else if(coordX+resX*coordY+resX*resY*coordZ != vCubePositionsToClear.back()) {
+                        addNeighbours(gridWroteOn, vCubePositionsToClear, coordX, coordY, coordZ, resX, resY, resZ);
+                        //gridWroteOn[make_uint2(coordX+resX*coordY+resX*resY*coordZ,0)] = true;
+                        //vCubePositionsToClear.push_back(coordX+resX*coordY+resX*resY*coordZ);
+                    }
+                }
+            }
+        }
+    }
+
+    drawSquare(modImage);
+    cudaDeviceSynchronize();
+
     if (!ovr_mode) {
         renderInput( posLeft, normalsLeft, depLeft, kfusion.integration, ovrPose * leftEye, kfusion.configuration.nearPlane, kfusion.configuration.farPlane, kfusion.configuration.stepSize(), 0.75 * kfusion.configuration.mu, outputSize);
         renderInput( posRight, normalsRight, depRight, kfusion.integration, ovrPose * rightEye, kfusion.configuration.nearPlane, kfusion.configuration.farPlane, kfusion.configuration.stepSize(), 0.75 * kfusion.configuration.mu, outputSize);
 
         if(render_texture) {
-            renderTexture(viewLeft.getDeviceImage(), posLeft, normalsLeft, rgbImage.getDeviceImage(), getCameraMatrix(2*kfusion.configuration.camera) * inverse(kfusion.pose), lux);
-            renderTexture(viewRight.getDeviceImage(), posRight, normalsRight, rgbImage.getDeviceImage(), getCameraMatrix(2*kfusion.configuration.camera) * inverse(kfusion.pose), light);
+            renderTexture(viewLeft.getDeviceImage(), posLeft, normalsLeft, modImage, getCameraMatrix(2*kfusion.configuration.camera) * inverse(kfusion.pose), lux);
+            renderTexture(viewRight.getDeviceImage(), posRight, normalsRight, modImage, getCameraMatrix(2*kfusion.configuration.camera) * inverse(kfusion.pose), light);
         } else {
             renderLight(viewLeft.getDeviceImage(), posLeft, normalsLeft, lux, ambient);
             renderLight(viewRight.getDeviceImage(), posRight, normalsRight, lux, ambient);
         }
     } else {
-        renderOculusCam(barrel.getDeviceImage(), kfusion.integration, rgbImage.getDeviceImage(), ovrPose, getCameraMatrix(2*kfusion.configuration.camera) * inverse(kfusion.pose), kfusion.configuration.nearPlane, kfusion.configuration.farPlane, kfusion.configuration.stepSize(), 0.75 * kfusion.configuration.mu, lux, ambient);
+        renderOculusCam(barrel.getDeviceImage(), kfusion.integration, modImage, ovrPose, getCameraMatrix(2*kfusion.configuration.camera) * inverse(kfusion.pose), kfusion.configuration.nearPlane, kfusion.configuration.farPlane, kfusion.configuration.stepSize(), 0.75 * kfusion.configuration.mu, lux, gridWroteOn);
     }
 
     cudaDeviceSynchronize();
@@ -200,6 +266,12 @@ void keys(unsigned char key, int x, int y){
         if (offset > .01f)
             offset -= .02f;
         break;//*/
+    case 'l':
+        learn_color = true;
+        curPos.x = 320;
+        curPos.y = 240;
+        vCubePositionsToClear.clear();
+        break;
     }
 
 }
@@ -273,6 +345,10 @@ int main(int argc, char ** argv) {
     config.dist_threshold = (argc > 2 ) ? atof(argv[2]) : config.dist_threshold;
     config.normal_threshold = (argc > 3 ) ? atof(argv[3]) : config.normal_threshold;
 
+    for(int i = 0; i < 10; i++) {
+        vLastTenDepths.push_back(-1.0f);
+    }
+
     initPose = SE3<float>(makeVector(size/2, size/2, 0, 0, 0, 0));
 
     glutInit(&argc, argv);
@@ -294,6 +370,10 @@ int main(int argc, char ** argv) {
 
     posLeft.alloc(make_uint2(1280, 800)), normalsLeft.alloc(make_uint2(1280, 800)), depLeft.alloc(make_uint2(640, 800));
     posRight.alloc(make_uint2(1280, 800)), normalsRight.alloc(make_uint2(1280, 800)), depRight.alloc(make_uint2(640, 800));
+    gridWroteOn.alloc(make_uint2(resX*resY*resZ,1));
+    for(int i = 0; i < resX*resY*resZ; i++) {
+        gridWroteOn[make_uint2(i,0)] = false;
+    }
 
 
     if(printCUDAError()) {

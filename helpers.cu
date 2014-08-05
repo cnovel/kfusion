@@ -23,6 +23,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "kfusion.h"
 #include "perfstats.h"
+#include "track.h"
+//#include "helpers.h"
+
+#include <thrust/device_vector.h>
+
 #include <iostream>
 #include <GL/glut.h>
 #include <GL/gl.h>
@@ -207,14 +212,16 @@ void renderInput( Image<float3> pos3D, Image<float3> normal, Image<float> depth,
     raycastInput<<<divup(pos3D.size, block), block>>>(pos3D, normal, depth, volume, view, nearPlane, farPlane, step, largestep, outputSize);
 }
 
-__global__ void OculusCam(Image<uchar4> out, const Volume volume, const Image<uchar3> texture, const Matrix4 view, const Matrix4 texproj, const float nearPlane, const float farPlane, const float step, const float largestep, const float3 light, const float3 ambient) {
+__global__ void OculusCam(Image<uchar4> out, const Volume volume, const Image<uchar3> texture, const Matrix4 view, const Matrix4 texproj, const float nearPlane, const float farPlane, const float step, const float largestep, const float3 light, const Image<bool> gridWroteOn) {
     float f = 204.4f;
     float2 iResolution = make_float2(1280, 800);
     float DistortionScale = 1.71461;
     float pp_adjust = 48.62;
-    //float IPD_by2 = 0.01;
     float3 K = make_float3(1.00f, 0.22f, 0.24f);
-    //mat4 iT_bh = mat4(1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1);
+
+    int resX = 1000; // you have to update the ones in kinect.cpp
+    int resY = 1000;
+    int resZ = 1000;
 
     const uint2 pos = thr2pos2();
     float2 uv = make_float2(pos.x, pos.y);
@@ -273,14 +280,24 @@ __global__ void OculusCam(Image<uchar4> out, const Volume volume, const Image<uc
             out.el() = make_uchar4(dir*255,dir*255,dir*255,255);
         } else {
             const uchar3 texcol = texture[make_uint2(projPixel.x, projPixel.y)];
-            out.el() = make_uchar4(texcol.x*dir, texcol.y*dir, texcol.z*dir, 255);
+            int coordX = pos3D.x*resX/5;
+            int coordY = pos3D.y*resY/5;
+            int coordZ = pos3D.z*resZ/5;
+            bool wroteOn = false;
+            if(0 <= coordX && coordX < resX && 0 <= coordY && coordY < resY && 0 <= coordZ && coordZ < resZ) {
+                wroteOn = gridWroteOn[make_uint2(coordX+resX*coordY+resX*resY*coordZ,0)];
+            }
+            if(wroteOn)
+                out.el() = make_uchar4(texcol.x*dir/3.0f, texcol.y*dir/3.0f, 255*dir, 255);
+            else
+                out.el() = make_uchar4(texcol.x*dir, texcol.y*dir, texcol.z*dir, 255);
         }
     }
 }
 
-void renderOculusCam(Image<uchar4> out, const Volume volume, const Image<uchar3> & texture, const Matrix4 view, const Matrix4 texproj, const float nearPlane, const float farPlane, const float step, const float largestep, const float3 light, const float3 ambient){
+void renderOculusCam(Image<uchar4> out, const Volume volume, const Image<uchar3> & texture, const Matrix4 view, const Matrix4 texproj, const float nearPlane, const float farPlane, const float step, const float largestep, const float3 light, const Image<bool> & gridWroteOn){
     dim3 block(32,16);
-    OculusCam<<<divup(out.size, block), block>>>(out, volume, texture, view, texproj, nearPlane, farPlane, step, largestep, light, ambient);
+    OculusCam<<<divup(out.size, block), block>>>(out, volume, texture, view, texproj, nearPlane, farPlane, step, largestep, light, gridWroteOn);
 }
 
 void viewMatrixUpdate(Matrix4 & ovrPose, float yYaw, float zEyeRoll, float xEyePitch){
@@ -296,3 +313,174 @@ void viewMatrixUpdate(Matrix4 & ovrPose, float yYaw, float zEyeRoll, float xEyeP
     ovrPose.data[2].y = sin(yYaw)*sin(zEyeRoll) + cos(yYaw)*cos(zEyeRoll)*sin(xEyePitch);
     ovrPose.data[2].z = cos(yYaw)*cos(xEyePitch);
 }
+
+__global__ void isSquare(Image<uchar3> texture){
+    const uint2 pos = thr2pos2();
+    if ((pos.x == 310 && pos.y < 250 && pos.y > 230) || (pos.x == 330 && pos.y < 250 && pos.y > 230) || (pos.y == 230 && pos.x > 310 && pos.x < 330) || (pos.y == 250 && pos.x > 310 && pos.x < 330)) 
+        texture.el() =  make_uchar3(255,0,0);
+
+}
+
+void drawSquare(Image<uchar3> & texture){
+    dim3 block(32,16);
+    isSquare<<<divup(texture.size, block), block>>>(texture);
+}
+
+__global__ void trim(Image<uchar3> texture, const float3 hsvToTrack) {
+    uchar3 pixColor = texture.el();
+    const uint2 pos = thr2pos2();
+
+    float r = ((float)pixColor.x) / 255.0f;
+    float g = ((float)pixColor.y) / 255.0f;
+    float b = ((float)pixColor.z) / 255.0f;
+
+    float epsiHue = 0.2f;
+
+    float hue, sat;
+    float max = (r > g) ? (r > b) ? r : b : (g > b) ? g : b;
+    float min = (r < g) ? (r < b) ? r : b : (g < b) ? g : b;
+
+    if (max == min) {
+        hue = 0;
+    } else if (max == r) {
+        hue = (60.0f*(g-b)/(max-min) + 360.0f);
+        if (hue > 360.0f) {
+            hue -= 360.0f;
+        }
+    } else if (max == g){
+                hue = (60.0f*(b-r)/(max-min) + 120.0f);
+    } else {
+        hue = (60.0f*(r-g)/(max-min) + 240.0f);
+    }
+
+    hue = hue*3.14159/360.0f;
+
+    if (max == 0)
+        sat = 0;
+    else
+    sat = 1.0f - min/max;
+
+    float diffSat, diffHue;
+    diffSat = (sat > hsvToTrack.y) ? sat - hsvToTrack.y : hsvToTrack.y - sat;
+    diffHue = (hue + 3.14159 - hsvToTrack.x);
+    if (diffHue > 3.14159)
+        diffHue -= 3.14159;
+
+    if (diffHue < epsiHue && diffSat < hsvToTrack.y/4.0f) {
+        texture.el() = make_uchar3(255,0,0);
+    }
+}
+
+void colorTrim(Image<uchar3> & texture, const float3 hsvToTrack) {
+    dim3 block(32,16);
+    trim<<<divup(texture.size, block), block>>>(texture, hsvToTrack);
+}
+
+__host__ __device__ float3 huesatval(const Image<uchar3> & texture, uint2 pos){
+    uchar3 pixColor = texture[pos];
+    float r = ((float)pixColor.x) / 255.0f;
+    float g = ((float)pixColor.y) / 255.0f;
+    float b = ((float)pixColor.z) / 255.0f;
+
+    float hue, sat, val;
+    float max = (r > g) ? (r > b) ? r : b : (g > b) ? g : b;
+    float min = (r < g) ? (r < b) ? r : b : (g < b) ? g : b;
+
+    if (max == min) {
+        hue = 0;
+    } else if (max == r) {
+        hue = (60.0f*(g-b)/(max-min) + 360.0f);
+        if (hue > 360.0f) {
+            hue -= 360.0f;
+        }
+    } else if (max == g){
+        hue = (60.0f*(b-r)/(max-min) + 120.0f);
+    } else {
+        hue = (60.0f*(r-g)/(max-min) + 240.0f);
+    }
+
+    hue = hue*3.14159/360.0f;
+
+    if (max == 0)
+        sat = 0;
+    else
+        sat = 1.0f - min/max;
+
+    val = max;
+
+    return make_float3(hue, sat, val);
+}
+
+// __global__ void mapGPU(const Image<uchar3> texture, char* mapPix, const float3 hsvToTrack) {
+//     uint2 pos = thr2pos2();
+//     if (pos.x > 319) {
+//         pos.x = 0;
+//     }
+//     if (pos.y > 239) {
+//         pos.y = 0;
+//     }
+
+//     float3 p1 = huesatval(texture, make_uint2(pos.x,pos.y));
+//     float3 p2 = huesatval(texture, make_uint2(pos.x+1,pos.y));
+//     float3 p3 = huesatval(texture, make_uint2(pos.x,pos.y+1));
+//     float3 p4 = huesatval(texture, make_uint2(pos.x+1,pos.y));
+
+//     __shared__ char* testMap;
+//     testMap = mapPix;
+
+//     float epsiHue = .2f;
+//     *(testMap + pos.x*240 + pos.y) = 0;
+//     float diffSat1, diffHue1, diffSat2, diffHue2, diffSat3, diffHue3, diffSat4, diffHue4;
+    
+//     diffSat1 = (p1.y > hsvToTrack.y) ? p1.y - hsvToTrack.y : hsvToTrack.y - p1.y;
+//     diffHue1 = (p1.x + 3.14159 - hsvToTrack.x);
+//     if (diffHue1 > 3.14159)
+//         diffHue1 -= 3.14159;
+//     if (diffHue1 < epsiHue && diffSat1 < hsvToTrack.y/4.0f)
+//         //*(mapPix + pos.x*240 + pos.y) += 1;
+
+//     diffSat2 = (p2.y > hsvToTrack.y) ? p2.y - hsvToTrack.y : hsvToTrack.y - p2.y;
+//     diffHue2 = (p2.x + 3.14159 - hsvToTrack.x);
+//     if (diffHue2 > 3.14159)
+//         diffHue2 -= 3.14159;
+//     if (diffHue2 < epsiHue && diffSat2 < hsvToTrack.y/4.0f)
+//         //*(mapPix + pos.x*240 + pos.y) += 1;
+
+//     diffSat3 = (p3.y > hsvToTrack.y) ? p3.y - hsvToTrack.y : hsvToTrack.y - p3.y;
+//     diffHue3 = (p3.x + 3.14159 - hsvToTrack.x);
+//     if (diffHue3 > 3.14159)
+//         diffHue3 -= 3.14159;
+//     if (diffHue3 < epsiHue && diffSat3 < hsvToTrack.y/4.0f)
+//         //*(mapPix + pos.x*240 + pos.y) += 1;
+
+//     diffSat4 = (p4.y > hsvToTrack.y) ? p4.y - hsvToTrack.y : hsvToTrack.y - p4.y;
+//     diffHue4 = (p4.x + 3.14159 - hsvToTrack.x);
+//     if (diffHue4 > 3.14159)
+//         diffHue4 -= 3.14159;
+//     //if (diffHue4 < epsiHue && diffSat4 < hsvToTrack.y/4.0f)
+//         //*(mapPix + pos.x*240 + pos.y) += 1;
+    
+// }
+
+// void computeMapGPU(const Image<uchar3> & texture, char* mapPix, const float3 hsvToTrack) {
+//     dim3 block(32,16);
+//     uint2 size = make_uint2(320,240);
+//     mapGPU<<<divup(size, block), block>>>(texture, mapPix, hsvToTrack);
+// }
+
+// __global__ void heatmapGPU(char* mapPix, int* heatMap, int radius) {
+//     const uint2 pos = thr2pos2();
+//     *(heatMap + pos.x * 240 + pos.y) = 0;
+//     for(int k = pos.x-radius; k < pos.x+radius+1; k++) {
+//         for(int l = pos.y-radius; l < pos.y+radius+1; l++) {
+//             if (k>=0 && k<320 && l>=0 && l<240)
+//                 *(heatMap + pos.x * 240 + pos.y) += *(mapPix + k * 240 + l);
+//         }
+//     }
+// }
+
+// void computeHeatMapGPU(char* mapPix, int* heatMap, int radius) {
+//     dim3 block(32,16);
+//     uint2 size = make_uint2(320,240);
+//     heatmapGPU<<<divup(size, block), block>>>(mapPix, heatMap, radius);
+// }
