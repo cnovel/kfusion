@@ -32,5 +32,8 @@ To do
 
 Contributors
 -------------
-Hartmut Seichter
-Gerhard Reitmayr
+Hartmut Seichter, Gerhard Reitmayr
+
+Thanks to
+-------------
+Andrew Davison, Steven Lovegrove
