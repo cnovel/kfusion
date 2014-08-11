@@ -73,6 +73,7 @@ int resY = 1000;
 int resZ = 1000;
 int noDepth = 0;
 vector<float> vLastTenDepths;
+Mat3 rotHMDtoOVR;
 
 void display(void){
 
@@ -195,6 +196,16 @@ void display(void){
     drawSquare(modImage);
     cudaDeviceSynchronize();
 
+    if (firstTime) {
+        Matrix4 hmdPose;
+        viewMatrixUpdate(hmdPose, yYaw, zEyeRoll, xEyePitch);
+        Mat3 hmdRot = getRot(hmdPose);
+        Mat3 ovrRot = getRot(ovrPose);
+        Mat3 transHmdRot = transpose(hmdRot);
+        rotHMDtoOVR = multiply(transHmdRot,ovrRot);
+        firstTime = false;
+    }
+
     if(ovr_correction) {
         float3 viewDirection = make_float3(0,0,-0.15f-offset);
         float3 vecToAdd = rotateVec(ovrPose, viewDirection);
@@ -202,13 +213,11 @@ void display(void){
         ovrPose.data[1].w += vecToAdd.y;
         ovrPose.data[2].w += vecToAdd.z;
     }
-    if (firstTime) {
-        Matrix4 hmdPose;
-        viewMatrixUpdate(hmdPose, yYaw, zEyeRoll, xEyePitch);
-    
-    }
-    if (ovr_sensor_tracking)
+
+    if (ovr_sensor_tracking) {
         viewMatrixUpdate(ovrPose, yYaw, zEyeRoll, xEyePitch);
+        correctView(ovrPose, rotHMDtoOVR);
+    }
 
     if (!ovr_mode) {
         renderInput( posLeft, normalsLeft, depLeft, kfusion.integration, ovrPose * leftEye, kfusion.configuration.nearPlane, kfusion.configuration.farPlane, kfusion.configuration.stepSize(), 0.75 * kfusion.configuration.mu, outputSize);

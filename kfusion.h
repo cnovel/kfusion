@@ -113,6 +113,10 @@ struct Matrix4 {
     }
 };
 
+struct Mat3 {
+    float3 data[3];
+};
+
 std::ostream & operator<<( std::ostream & out, const Matrix4 & m );
 Matrix4 operator*( const Matrix4 & A, const Matrix4 & B);
 Matrix4 inverse( const Matrix4 & A );
