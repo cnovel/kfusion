@@ -63,6 +63,8 @@ float3 hsvToTrack;
 int2 curPos = make_int2(320,240);
 bool learn_color = false;
 bool tracking = false;
+bool ovr_correction = false;
+bool firstTime = true;
 int errorCount = 0;
 Image<bool, HostDevice> gridWroteOn;
 std::vector<int> vCubePositionsToClear;
@@ -109,9 +111,6 @@ void display(void){
 
     Matrix4 cameraView = getInverseCameraMatrix(kfusion.configuration.camera * 2);
     Matrix4 ovrPose = kfusion.pose;
-    
-    if (ovr_sensor_tracking)
-        viewMatrixUpdate(ovrPose, yYaw, zEyeRoll, xEyePitch);
 
     Matrix4 leftEye = cameraView;
     Matrix4 rightEye = cameraView;
@@ -196,6 +195,21 @@ void display(void){
     drawSquare(modImage);
     cudaDeviceSynchronize();
 
+    if(ovr_correction) {
+        float3 viewDirection = make_float3(0,0,-0.15f-offset);
+        float3 vecToAdd = rotateVec(ovrPose, viewDirection);
+        ovrPose.data[0].w += vecToAdd.x;
+        ovrPose.data[1].w += vecToAdd.y;
+        ovrPose.data[2].w += vecToAdd.z;
+    }
+    if (firstTime) {
+        Matrix4 hmdPose;
+        viewMatrixUpdate(hmdPose, yYaw, zEyeRoll, xEyePitch);
+    
+    }
+    if (ovr_sensor_tracking)
+        viewMatrixUpdate(ovrPose, yYaw, zEyeRoll, xEyePitch);
+
     if (!ovr_mode) {
         renderInput( posLeft, normalsLeft, depLeft, kfusion.integration, ovrPose * leftEye, kfusion.configuration.nearPlane, kfusion.configuration.farPlane, kfusion.configuration.stepSize(), 0.75 * kfusion.configuration.mu, outputSize);
         renderInput( posRight, normalsRight, depRight, kfusion.integration, ovrPose * rightEye, kfusion.configuration.nearPlane, kfusion.configuration.farPlane, kfusion.configuration.stepSize(), 0.75 * kfusion.configuration.mu, outputSize);
@@ -264,13 +278,16 @@ void keys(unsigned char key, int x, int y){
         break;
     case '-':
         if (offset > .01f)
-            offset -= .02f;
+            offset -= .01f;
         break;//*/
     case 'l':
         learn_color = true;
         curPos.x = 320;
         curPos.y = 240;
         vCubePositionsToClear.clear();
+        break;
+    case 'u':
+        ovr_correction = !ovr_correction;
         break;
     }
 
