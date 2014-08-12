@@ -15,7 +15,6 @@
 
 \setlength{\headheight}{15pt}
 
-
 \usepackage[english]{babel}
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath}
@@ -45,7 +44,11 @@
 
 \addcontentsline{toc}{section}{Introduction}
 \section*{Introduction}
+Augmented reality is a dynamic field in Computer Science and Computer Vision, with the multiplication of portable devices with high perfomance CPU and GPU. Multiples devices are providing an augmented reality experience. The Nintendo 3DS has a dedicated game with augmented reality cards, applications can be downloaded on smartphones. The Google Glass works like a small Head Up Display for the user, similar to what can be seen in some videogames. The Project Tango phone and tablet comes with built-in augmented reality applications. However, none of these devices are capable of displaying information for the entire field of view of the user. The smartphone or tablet size is small compared to the size of the field of view. The Google Glass encounters the same problem: there is no possible overlay of the reality.
 
+By using a virtual reality headset, such as the Oculus Rift, we cover the entire field of view of the user. Using an appropriate sensor, we can understand the scene surrounding the user. Then we can overlay information on the reality for the whole field of view. This creates a new kind of augmented reality device. Applications are infinite: the road to follow can be directly highlighted in a GPS application; you can play a virtual game in your living room with the game understanding the geometry of your living room -- making each game unique since you can move objects; a medical application can highlight organs during an operation and also provide an HUD with useful information. Possibilities are countless.
+
+During this project, we created a device fusionning an Oculus Rift and a Kinect to create a new kind of augmented reality device. The Kinect captures the surrounding scene. It is then rendered in 3D in the Oculus Rift with real-time color information. Thus the user can evolve just like in real life. An augmented reality application has been integrated. Using a \textit{magic pen}, it is possible to draw virtually on a surface.
 \newpage
 
 \section{Hardware review}
@@ -105,11 +108,88 @@ The Totem, developed by Vrvana, is similar to the Oculus Rift, except that two c
   \caption{\label{tpg} The Totem, with two cameras}
 \end{figure}
 
-The lens distorsion is computed directly via the hardware in the headset. The others characteristics are higly similar to the Oculus Rift. The Totem is very interesting thanks to these embedded cameras. We want to achieve a new type of augmented reality. The Totem directly captures what the eyes would see.
+The lens distorsion is computed directly via the hardware in the headset. The others characteristics are higly similar to the Oculus Rift. The Totem is very interesting thanks to these embedded cameras. We want to achieve a new type of augmented reality. The Totem directly captures what the eyes would see. This guarantees an almost perfect 3D image for the user. However, the 3D reconstruction is more difficult - as seen in section~\ref{subsec:stereocam}.
 
-\subsection{Test}
-\label{subsec:pca}
+\subsection{Capturing the scene}
+For rendering the scene in a virtual reality headset, we need to capture the scene surrounding the user. We can not just extract features from the scene. We need dense information about the scene in real time in order to create the corresponding 3D surface. In this part we present different devices that can compute a point cloud in real time.
 
+\subsubsection{Structured light scanning}
+Structured light scanning is a technique used for computing a depth map from the projection of near IR light patterns on the scene. The device project an IR light pattern on the surface of the room. Depending on the depth of the objects, the pattern is bigger or smaller than the reference pattern. Thus we can infer a depth map by reading the projection of the IR pattern. An exemple of pattern is presented in figure~\ref{kinectir}.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[scale=0.3]{Kinect-ir-image.png}
+  \caption{\label{kinectir} Kinect IR pattern}
+\end{figure}
+
+This technique is used by the first Kinect -- figure~\ref{kinect}. The resolution of the depth map is $320*240$ points. Other devices using this technique exist, such as the Asus Xtion or the PrimeSense Capri sensor.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[scale=0.3]{Kinect_1_1.jpg}
+  \caption{\label{kinect} First Kinect. From left to right: IR Pattern projector, IR Camera for reading the projected pattern, RGB camera}
+\end{figure}
+
+It is now possible to create very small IR light projector and IR light captor. The Capri sensor is ten times smaller than the Kinect sensor and can be easily mounted on a tablet or a virtual reality headset. Google Project Tango, a tablet with 3D sensing capabilities, is supposed to use the PrimeSense Capri sensor for capturing 3D information.
+
+However, the use of structured light comes with drawbacks. In very luminous area, the IR light captor can't work because the incoming light is blinding it. Surfaces like TV or computer screen reflect the IR light and so no information can be retrieve from these areas. Finally, the distance between the projector and the captor creates a shadow effect around the object. Very close objects can't be processed since they aren't properly seen by the captor or the sensor. And since the light intensity decreases with the distance, remote objects can't be seen. The computed distance is sometimes wrong for large distances (more than 2 meters). The depth distribution is discrete and coarse for large distance. Beyond two meters, the depth estimation is often considered as unreliable.
+
+\subsubsection{Time of Flight}
+A Time of Flight camera is estimating the distance of a point based on the known speed of light. The camera relies on light pulse. The illumination is switched on for a very short time on one point. The light reflects on the object and is gathered by the camera. The delay between the start of the pulse and the gathering by the camera is the time taken by the light to travel twice the distance between the camera and the object. Knowing the speed of light, we can deduce the distance of the point.
+
+Kinect 2 is using a time of flight camera -- figure~\ref{kinect2}. The resolution is much higher than Kinect one, since Kinect 2 produces a $512*424$ depth map. The time of flight doesn't suffer from illumination problems, position problems or distance problems. The depth distribution is not coarse in the remote areas, allowing a nice accuracy of the measurements -- see figure~\ref{depthK2}.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[scale=0.3]{Kinect2.jpg}
+  \caption{\label{kinect2} Kinect 2}
+\end{figure}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[scale=0.3]{Kinect2depth.jpg}
+  \caption{\label{depthK2} Depth map with the time of flight camera of the Kinect 2}
+\end{figure}
+
+However, Time Of Flight cameras are very expensive, especially for 30Hz processing of the environment. Until recently, real-time TOF cameras had a lower resolution than the Kinect 1. Due to the nature of light reflectivity, the depth estimation is less reliable when the light ray is not perpendicular to the surface. Figure~\ref{depthK2} shows a lot of noise and holes at the extremities of the depth map.
+
+\subsubsection{Stereo camera}
+\label{subsec:stereocam}
+Stereoscopy uses two or more pictures for finding corresponding features and replace them in 3D space. Given two images of the same object from slightly different points of view, we identify the features that appear on both images. This search is easily performed with the use of Computational Stereo techniques, such as the computation of the epipolar lines. Since we know where the images have been taken relatively to each others, we can compute the depth of the feature. We perform this for every features and we retrieve a point cloud with the approximate same resolution as the images taken.
+
+The chinese company Etron is selling very small devices with two optical captors and a processor for computing the depth map. A resulting depthmap is shown in figure~\ref{etron}.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[scale=0.3]{EtronDepth.png}
+  \caption{\label{etron} Depth map with two stereo camera}
+\end{figure}
+
+Stereo camera system is the cheaper system for retrieving a point cloud. It only requires some calibration and computation, but it is not a very expensive hardware compared to the other two systems.
+
+The computed depth map is unfortunately very noisy. There is a lot of noise when we compute the depth map. Shadow effects can be seen on figure~\ref{etron}. Moreover it is very difficult to compute a distance for uniform area, since no feature information can be retrieved. We need to extrapolate the distance based  on the surrounding information, but this leads to low fidelity reconstruction of the scene.
+
+\subsection{Conclusion}
+
+
+\section{Design/Theory}
+\subsection{KinectFusion}
+%% TO DO : Description of the algorithm + ICP description %%
+
+\subsection{Oculus Rift Headtracking}
+
+\subsection{Oculus Lens deformation}
+
+\section{Implementation}
+\subsection{kfusion}
+\subsection{Lens deformation}
+\subsection{Color rendering}
+\subsection{Oculus Calibration}
+\subsection{Magic Pen}
+
+\section{Results}
+\subsection{3D rendering}
+\subsection{Magic pen}
 
 \newpage
 \section*{Conclusion}
