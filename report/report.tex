@@ -174,7 +174,37 @@ The computed depth map is unfortunately very noisy. There is a lot of noise when
 
 \section{Design/Theory}
 \subsection{KinectFusion}
-%% TO DO : Description of the algorithm + ICP description %%
+For the reconstruction of the scene and the localization of the user, we use the KinectFusion algorithm. The KinectFusion algorithm achieves real-time dense surface mapping and reconstruction. The algorithm is fully described in \cite{KF1, KF2}. The GPU implementation of KinectFusion allows the real time reconstruction and localization. The algorithm is composed of four main stages:
+\begin{enumerate}
+\item \textbf{Depth Map conversion} The live depth map is converted into absolute 3D positions and normals in the camera coordinate space;
+\item \textbf{Camera tracking} We keep a rigid 6 degrees of freedom transform of the camera. At time $i$, the camera pose is noted $T_i = [R_i|t_i]$ with $R_i$ being a 3x3 rotation matrix and $t_i$ being a 3D translation vector. We use the Iterative Closest Point algorithm for tracking the position and orientation of the camera.
+\item \textbf{Volumetric integration}
+\item \textbf{Raycasting} The volume is raycast to render the implicit surface.
+\end{enumerate}
+
+Each of this stage is performed in parallel on the GPU using CUDA.
+
+\paragraph{Depth Map conversion} ~\\
+The depth map is a 2D array of float. At time $i$, for each pixel $u(x,y)$ we have the corresponding depth $D_i(u)$. Given the calibration matrix $K$ of the Kinect infrared camera, we can compute the 3D position in the camera coordinate space. For each pixel $u$, a GPU thread compute the 3D position as follow:
+$$v_i(u) = D_i(u)K^{-1}[u,1]$$
+The results are saved in a single vertex map $V_i$.
+
+We also compute the corresponding normal map, as it will be useful later for the ICP algorithm. Each normal $n_i(u)$ is computed by a GPU thread using the neighboring reprojected points:
+$$n_i(u) = (v_i(x+1,y) - v_i(u))\times (v_i(x,y+1) - v_i(u))$$
+The normal is then normalized and stored in a single normal map $N_i$.
+
+Given the rigid body transform of the camera $T_i = [R_i|t_i]$, we can convert the vertices and the normals into global coordinates:
+$$v_i^g(u) = T_iv_i(u)$$
+$$n_i^g(u) = R_in_i(u)$$
+
+\paragraph{Camera tracking} ~\\
+Iterative Closest Point algorithm was introduced by \cite{ICP1}. It is a widely studied algorithm for 3D shapes alignement. \cite{ICP2} provides a detailed study of the ICP algorithm. In KinectFusion, ICP is also used for tracking the camera pose of the Kinect, that means its position and its orientation. For each new depth frame captured by the Kinect, the algorithm estimates the 6DOF transform that aligns the vertices and normals of the current frame with those of the previous frame. This gives a relative 6DOF transform. If we apply them together incrementally, we obtain the global camera pose $T_i$.
+
+The first part of the ICP is to find correspondences between the current oriented points set at time $i$ with the previous one at time $i-1$. KinectFusion uses \textit{projective data association}. Given the previous global rigid body transform $T_{i-1}$
+
+\paragraph{Volumetric representation and integration} ~\\
+
+\paragraph{Raycasting} ~\\
 
 \subsection{Oculus Rift Headtracking}
 
