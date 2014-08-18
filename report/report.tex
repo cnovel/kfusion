@@ -26,6 +26,7 @@
 \usepackage{mathtools}
 \usepackage{commath}
 \usepackage{stmaryrd}
+%\usepackage[noend]{algpseudocode}
 
 \title{OFusion\\
 \large{CO542 Individual Project}}
@@ -171,7 +172,7 @@ The computed depth map is unfortunately very noisy. There is a lot of noise when
 
 \subsection{Conclusion}
 
-
+\newpage
 \section{Design/Theory}
 \subsection{KinectFusion}
 For the reconstruction of the scene and the localization of the user, we use the KinectFusion algorithm. The KinectFusion algorithm achieves real-time dense surface mapping and reconstruction. The algorithm is fully described in \cite{KF1, KF2}. The GPU implementation of KinectFusion allows the real time reconstruction and localization. The algorithm is composed of four main stages:
@@ -184,7 +185,7 @@ For the reconstruction of the scene and the localization of the user, we use the
 
 Each of this stage is performed in parallel on the GPU using CUDA.
 
-\paragraph{Depth Map conversion} ~\\
+\subsubsection{Depth Map conversion}
 The depth map is a 2D array of float. At time $i$, for each pixel $u(x,y)$ we have the corresponding depth $D_i(u)$. Given the calibration matrix $K$ of the Kinect infrared camera, we can compute the 3D position in the camera coordinate space. For each pixel $u$, a GPU thread compute the 3D position as follow:
 $$v_i(u) = D_i(u)K^{-1}[u,1]$$
 The results are saved in a single vertex map $V_i$.
@@ -197,14 +198,96 @@ Given the rigid body transform of the camera $T_i = [R_i|t_i]$, we can convert t
 $$v_i^g(u) = T_iv_i(u)$$
 $$n_i^g(u) = R_in_i(u)$$
 
-\paragraph{Camera tracking} ~\\
+\subsubsection{Camera tracking}
 Iterative Closest Point algorithm was introduced by \cite{ICP1}. It is a widely studied algorithm for 3D shapes alignement. \cite{ICP2} provides a detailed study of the ICP algorithm. In KinectFusion, ICP is also used for tracking the camera pose of the Kinect, that means its position and its orientation. For each new depth frame captured by the Kinect, the algorithm estimates the 6DOF transform that aligns the vertices and normals of the current frame with those of the previous frame. This gives a relative 6DOF transform. If we apply them together incrementally, we obtain the global camera pose $T_i$.
 
-The first part of the ICP is to find correspondences between the current oriented points set at time $i$ with the previous one at time $i-1$. KinectFusion uses \textit{projective data association}. Given the previous global rigid body transform $T_{i-1}$
+The first part of the ICP is to find correspondences between the current oriented points set at time $i$ with the previous one at time $i-1$. KinectFusion uses \textit{projective data association}. Given the previous global rigid body transform $T_{i-1}$, each GPU thread project a point $v_{i-1}$ into camera coordinate space. It then looks up the corresponding point in $V_i$ and in $N_i$ (respectfully the current vertex map and the current normal map). Doing so, we find the corresponding points along the same ray. Next, each thread tests the corresponding points to reject outliers. We compute the euclidean distance between the two global positions and angle between the two corresponding normals. If both of them are within a threshold, the correspondence is validated. A pseudo-code of the algorithm is described in Algorithm~\ref{algo1}. $T_i$ is initialized at $T_{i-1}$ and is updated with an incremental transform at the end of each step of the ICP.
 
-\paragraph{Volumetric representation and integration} ~\\
+\begin{algorithm}
+\caption{Projective point-plane data association}\label{algo1}
+\begin{algorithmic}[1]
+\For{$\text{each pixel } u \in \text{ depth map } D_i \text{ in parallel}$}
+  \If{$D_i(u) > 0$}
+  \State $v_i \gets T_{i-1}^{-1}v_{i-1}^g$
+  \State $p \gets \text{perspective project vertex of } v_{i-1}$
+    \If{$p \in \text{ vertex map } V_i$}
+    \State $v \gets T_iV_i(p)$
+    \State $n \gets R_iN_i(p)$
+      \If{$\left\|v-v_{i-1}^{g}\right\| < \text{ distance threshold and } abs(n\cdot n_{i-1}^{g}) < \text{ normal threshold}$}
+      \State point correspondence found
+      \EndIf
+    \EndIf
+  \EndIf
+\EndFor
+\end{algorithmic}
+\end{algorithm}
 
-\paragraph{Raycasting} ~\\
+All the corresponding points are saved into the same set. The output of each ICP iteration is a transformation matrix $T$ that minimizes the point-to-plane metrics, defined as follows:
+$$\text{arg min } \sum_{D_i(u)>0} \left\|(Tv_i(u)-v_{i-1}^g(u))\cdot n_{i-1}^g(u) \right\|^2$$
+
+Assuming only an incremental transform occurs between frames, the above system can be solve using a linear approximation. The linear system is computed and summed in parallel on the GPU. The 6x6 linear system obtained is then solved on the CPU using a Cholesky decomposition.
+
+The ICP iteration is repeated multiple times in order to obtain the most accurate rigid transform for $T_i$. This algorithm is working since $T_i$ and $T_{i-1}$ are close enough to make the first approximation on the ICP : $T_i \approx T_{i-1}$.
+
+\subsubsection{Volumetric representation and integration}
+Thanks to the ICP, we now have the global pose for each depth measurement. That way, each depth map can be converted from image coordinates to global coordinate space. For computing a 3D surface, multiple techniques exists -- \cite{ISO} provides a review of the principal methods. We need a fast computation of the 3D surface, so all the Delaunay-based or region-growing techniques can not be applied here.
+
+Instead, we use a volumetric representation based on \cite{VolRep}. A 3D volume of fixed resolution is defined such as it maps the specific dimension of a 3D physical space. This volume is then divided into a grid of uniform voxels. Each voxel stores the a variant of Signed Distance Functions \cite{SDF}, specifying a relative distance to the underlying surface. The value of a Signed Distance Function is positive if the voxel is in front of the surface, negative otherwise. The surface interface is defined by the zero-crossing -- where the values change sign.
+
+In KinectFusion, the value stored in a voxel is a Truncated Signed Distance Function -- TSDF \cite{VolRep}. This representation can easily be kept up to date with incoming data points -- Kinect provides roughly 5 millions measurements each second. It can handle uncertainty in the data, deal with multiple measurements and fill holes as new measurements are done.
+
+To achieve a real time integration of the 3D vertices, KinectFusion uses a GPU implementation. The 3D voxel grid is stored on the GPU as aligned linear memory. This implementation is not memory efficient -- a $512^3$ volume with 32-bits voxels requires 512MB of memory -- but speed efficient. Due to the linear alignement, access from the GPU threads are faster because the access can be coalesced. Algorithm~\ref{algo2} describes the main steps of the GPU implementation. Because there is a large number of voxels, it is impossible to launch one thread per voxel. To ensure a coalesced memory access, each GPU thread is assigned to a $(x,y)$ position at the front of the 3D voxel grid. In parallel, GPU threads go through the volume, moving along the Z-axis. Since the resolution and the physical dimensions are known, a voxel can be converted into a 3D positions in global coordinate space. We can calculate the distance between the voxel and the camera position -- $t_i$ -- and we can project the vertex back onto the image plane to know the actual depth measured along the ray. The difference gives the new SDF value for the voxel (line 7). The SDF is then normalized to a TSDF (line 9 and 11) and averaged with the previous stored value    (line 13).
+
+\begin{algorithm}
+\caption{Projective TSDF integration}\label{algo2}
+\begin{algorithmic}[1]
+\For{$\text{each voxel } g \in x,y \text{ volume slice } \text{ in parallel}$}
+  \While{$\text{sweeping from front slice to back}$}
+  \State $v^g \gets \text{convert }g\text{ from grid to global 3D position}$
+  \State $v \gets T_i^{-1}v^g$
+  \State $p \gets \text{perspective project vertex} v$
+    \If{$v \in \text{ camera field of view}$}
+    \State $sdf_i \gets \left\|t_i-v^{g}\right\| - D_i(p)$
+      \If{$sdf_i > 0$}
+      \State $tsdf_i \gets \text{min}(1, sdf_i/\text{max truncation})$
+      \Else
+      \State $tsdf_i \gets \text{max}(-1, sdf_i/\text{min truncation})$
+      \EndIf
+    \State $w_i \gets \text{min}(\text{max weight}, w_{i-1}+1)$
+    \State $tsdf^{avg} \gets \dfrac{tsdf_{i-1}w_{i-1}+tsdf_iw_i}{w_{i-1}+w_i}$
+    \State store $w_i$ and $tsdf^{avg}$ in voxel $g$
+    \EndIf
+  \EndWhile
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+\subsubsection{Raycasting}
+Once the vertices are integrated, we need to render the 3D scene from the point of view of the camera. KinectFusion implements a GPU based raycaster. Algorithm~\ref{algo3} gives the pseudocode of the raycaster. In parallel, each GPU renders one pixel of the generated view. A GPU thread is given a starting position and walks along the ray corresponding to the pixel being rendered. The position of the implicit surface is extracted when the signum of the TSDF changes. The surface intersection point is merely linearly interpolated given the sample points on either sides of the zero-crossing. Assuming that the gradient is orthogonal to the surface, the normal is computed as the derivative of the TSDF at the zero-crossing \cite{LevSet}. So each GPU thread can compute the surface point and its normal. Given a light source, it is then easy to render a simple lighting of the model.
+
+\begin{algorithm}
+\caption{Parallel raycaster and shader}\label{algo3}
+\begin{algorithmic}[1]
+\For{$\text{each pixel } u \in \text{ output image in parallel }$}
+  \State $\text{ray}^{\text{start}} \gets \text{ back project} [u,0]; \text{ convert to grid position}$
+  \State $\text{ray}^{\text{next}} \gets \text{ back project} [u,1]; \text{ convert to grid position}$
+  \State $\text{ray}^{\text{dir}} \gets \text{ normalize }(\text{ray}^{\text{next}}-\text{ray}^{\text{start}})$
+  \State $\text{ray}^{\text{len}} \gets 0$
+  \State $g \gets \text{first voxel along } \text{ray}^{\text{dir}}$
+    \While{$\text{voxel } g \text{within volume bounds}$}
+    \State $\text{ray}^{\text{len}} \gets \text{ray}^{\text{len}} + 1$
+    \State $g^{\text{prev}} \gets g$
+    \State $g \gets \text{traverse next voxel along }\text{ray}^{\text{dir}}$
+      \If{zero crossing from $g$ to $g^{\text{prev}}$}
+      \State $p \gets$ extract trilinear interpolated grid position
+      \State $v \gets$ convert $p$ from grid to global 3D position
+      \State $n \gets$ surface gradient as $\nabla tsdf(p)$
+      \State $u \gets$ correct pixel shading for oriented point $(v,n)$
+      \EndIf
+    \EndWhile
+\EndFor
+\end{algorithmic}
+\end{algorithm}
 
 \subsection{Oculus Rift Headtracking}
 
@@ -227,6 +310,6 @@ The first part of the ICP is to find correspondences between the current oriente
 
 \newpage
 \addcontentsline{toc}{section}{References}
-%\bibliographystyle{alpha}
-%\bibliography{biblio}
+\bibliographystyle{alpha}
+\bibliography{biblio}
 \end{document}
