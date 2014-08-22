@@ -46,7 +46,7 @@ bool reset = true;
 bool should_integrate = true;
 bool render_texture = false;
 bool ovr_sensor_tracking = false;
-bool ovr_mode = false;
+bool ovr_mode = true;
 
 Image<float3, Device> posRight, normalsRight, posLeft, normalsLeft;
 Image<float, Device> depRight, depLeft;
@@ -63,7 +63,7 @@ float3 hsvToTrack;
 int2 curPos = make_int2(320,240);
 bool learn_color = false;
 bool tracking = false;
-bool ovr_correction = false;
+bool ovr_correction = true;
 bool firstTime = true;
 int errorCount = 0;
 Image<bool, HostDevice> gridWroteOn;
