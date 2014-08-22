@@ -27,6 +27,8 @@
 \usepackage{commath}
 \usepackage{stmaryrd}
 \usepackage{url}
+\usepackage{caption}
+\usepackage{subcaption}
 %\usepackage{hyperref}
 %\usepackage[noend]{algpseudocode}
 
@@ -352,14 +354,38 @@ Knowing the yaw error, the orientation of the Rift is ajusted accordingly.
 \subsection{Head mounted display and Lens deformation}
 The screen of the Rift -- sometimes called Head Mounted Display or HMD -- displays one image for the left part on the left part of the screen and one image for the right eye on the right part of the screen. The hardware is optimised for an interpupillary distance of 65mm. Two different images mean that we need to rendere the scene from two different points of view.
 
-The lenses in the Rift magnify the images, thus providing an almost real-life field of view. However, the lenses distort the images a lot. If we display the original 3D image on the screen, then the user observes a pincushion distortion effect \cite{OVRDoc}.
+The lenses in the Rift magnify the images, thus providing an almost real-life field of view. However, the lenses distort the images a lot. If we display the original 3D image on the screen, then the user observes a pincushion distortion effect \cite{OVRDoc} -- see Figure~\ref{pindist}.
+
+To avoid this distortion, we must post-processed the 3D rendered views. We apply an equal and opposite barrel distortion -- Figure~\ref{bardist} -- in order to cancel the puncushion distortion.
+
+\begin{figure}[h]
+        \centering
+        \begin{subfigure}[b]{0.3\textwidth}
+                \includegraphics[scale=1]{PinDist.png}
+                \caption{Pincushion distortion}
+                \label{pindist}
+        \end{subfigure}
+        \begin{subfigure}[b]{0.3\textwidth}
+                \includegraphics[scale=1]{BarDist.png}
+                \caption{Barrel distortion}
+                \label{bardist}
+        \end{subfigure}
+        \caption{Distortion of the lenses}
+\end{figure}
+
+The lenses cause also chromatic aberrations on the edges of the field of view.
 
 \newpage
 \section{Implementation}
+The implementation was made in C++ and in CUDA. It is based on kfusion, an implementation of KinectFusion developed by Gerhard Reitmayr.
 \subsection{kfusion}
+
 \subsection{Lens deformation}
+
 \subsection{Color rendering}
+
 \subsection{Oculus Calibration}
+
 \subsection{Magic Pen}
 
 \newpage
