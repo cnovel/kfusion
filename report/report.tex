@@ -19,7 +19,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath}
 \usepackage{graphicx}
-\usepackage{algpseudocode}
+%\usepackage{algpseudocode}
 \usepackage{algorithm}
 \usepackage{amsthm}
 \usepackage{amssymb}
@@ -30,7 +30,7 @@
 \usepackage{caption}
 \usepackage{subcaption}
 %\usepackage{hyperref}
-%\usepackage[noend]{algpseudocode}
+\usepackage[noend]{algpseudocode}
 
 \title{OFusion\\
 \large{CO542 Individual Project}}
@@ -387,6 +387,67 @@ The implementation was made in C++ and in CUDA. It is based on kfusion, an imple
 \subsection{Oculus Calibration}
 
 \subsection{Magic Pen}
+One of the goal of this project was to create an augmented reality application. We wanted to create an interactive application, not just a visual one. The original KinectFusion provided an augmented application where the user could draw on a surface with his/her hands. However, the visualization was difficult. The user was standing in front of the Kinect and didn't have a direct feedback of what he was drawing.
+
+With the Oculus Rift, the user can see directly what he is drawing. It is then much more immersive.
+
+\subsubsection{Tracking technology}
+In the KinectFusion algorithm, the drawing application was tracking the hand of the user. Due to the proximity of the Kinect sensors in our prototype, hand tracking is difficult. We lack the depth information for providing a good tracking of the hand. In our implementation, we focused on color tracking of a pen.
+
+To learn the color, we ask the user to place the color to be learned in the center of the view, symbolized on the screen by a red square. We convert the color information from the RGB space to the Hue Saturation Value space. This conversion allows a better tracking of a color. Even if the lighting condition changes, the Hue and Saturation of a color shouldn't change. This conversion makes the tracking more resistant and a pseudo-code is given in Algorithm~\ref{algo4}.
+
+\begin{algorithm}
+\caption{Conversion from RGB to HSV}\label{algo4}
+\begin{algorithmic}[1]
+\State float $red$, $gre$, $blu$
+\State $max$ = max($red$,$gre$,$blu$)
+\State $min$ = min($red$,$gre$,$blu$)
+\If{$max = min$}
+  \State $hue = 0$
+\ElsIf{$max = red$}
+  \State $hue = (60*(gre-blu)/(max-min) + 360)$
+  \If{$hue > 360$}
+    \State{$hue -= 360$}
+  \EndIf
+\ElsIf{$max = gre$}
+  \State $hue = (60*(blu-red)/(max-min) + 120)$
+\Else
+  \State $hue = (60*(red-gre)/(max-min) + 240)$
+\EndIf
+\If{$max = 0$}
+  \State $sat = 0$
+\Else
+  \State $sat = 1-min/max$
+\EndIf
+\State $val = max$
+\end{algorithmic}
+\end{algorithm}
+
+HSV space uses 3 components : the hue, the saturation and the value. The hue is encoded according to its angle on the color wheel, therefore $hue \in [0;360]$. The saturation corresponds to the intensity of the color and $sat \in [0;1]$. Finally, the value corresponds to the brightness of the color and $val \in [0;1]$. If the lighting intensity is to change during the color tracking, only $val$ should vary. However, under a bright light or in the dark, the saturation and hue is difficult to compute due to the noise of the camera.
+
+To determine which color to track, we take the mean color in a 20 by 20 pixels square. Since the hue is a circular value, extra care has been taken to compute the average.
+
+The tracking keeps track of the latest known 2D position of the pen in the image. The tracking is done as follows:
+\begin{enumerate}
+\item In a square of 50 by 50 pixels -- represented by an array -- around the latest known 2D position, we look up every pixel. If the color of the pixel is close to the hue and saturation of the tracked color, we set its value to 1 in the array. Else we set it to 0.
+\item We then compute a heatmap. For every pixel in the square previously introduced, we add all the values of the surrounding pixels in a specified radius.
+\item Finally, we update the tracked position to the pixel position with the highest score on the heatmap.
+\end{enumerate}
+
+This algorithm works well and fast, given that the tracked color is not a color present in the background. In the lab, the tables are light brown, the walls are white, the floor is dark blue and the keyboards are black. By choosing purple as the color to track, we don't have interference with the background.
+
+The threshold for the color comparison are the followings: $\left\| hue_{tracked} - hue_{pixel}\right\| < 0.2$ with the values in radians; $\left\| sat_{tracked} - sat_{pixel}\right\| < \dfrac{sat_{tracked}}{4}$.
+
+\subsubsection{Computing the 3D position}
+Once we have the 2D position, we need to compute the corresponding 3D position to know if the pen is in contact of a surface or not. We first compute the distance between the camera and the pen. We use the raw depth map from the Kinect. We compute the median distance for all the pixels within a certain radius of the tracked position. Here we use a 6 by 6 pixels square. The this computed distance is once again filtered: we take the median of the last 10 computed distances. These two filters help prevent the misreadings of the Kinect sensor or the bad readings when the tracked position is on the edge of the pen.
+
+Once we have the distance $d$ between the camera and the pen, we only need the direction vector from the camera to the pen. Considering the tracked position is note $u$, the direction vector is:
+$$dir = R_iK^{-1}[u,1]$$
+where $R_i$ is the current orientation pose of the Kinect and K the Kinect camera parameters. Once this vector $dir$ is normalize, we find the global 3D position of the pen:
+$$pen^g = t_i + d*dir_{norm}$$
+where $t_i$ is the current position of the Kinect.
+
+\subsubsection{Writing on the surface}
 
 \newpage
 \section{Results}
