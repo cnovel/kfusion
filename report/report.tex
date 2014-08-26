@@ -67,24 +67,24 @@ In the following sections, we will present some virtual reality headsets and hig
 \subsubsection{Oculus Rift and Sony Morpheus}
 The Oculus Rift is developped by Oculus VR \cite{Oculus}. It is the first virtual headset targetting the mass market, and therefore has an aggressive price -- the first development kit costs 300\$, 350\$ for the second one.
 
-The Oculus uses a screen for displaying the image. In the first development kit, the resolution of the screen was 1280x800, leading to an effective 640x800 per eye. One part of the screen displays the image for one eye, the other part displays the image for the other eye. The Rift uses lenses to distort the image on the screen, so that it fits the actual field of view of the human eye. The field of view of the Rift is 90 degrees horizontally. Figure~\ref{oculusback} shows the back of the Oculus Rift.
+The Oculus uses a screen for displaying the image. In the first development kit, the resolution of the screen was 1280x800, leading to an effective 640x800 per eye. One part of the screen displays the image for one eye, the other part displays the image for the other eye. The Rift uses lenses to distort the image on the screen, so that it fits the actual field of view of the human eye. The field of view of the Rift is 90 degrees horizontally. Figure~\ref{fig:oculusback} shows the back of the Oculus Rift.
 
 Gyros, accelerometers and magnetometers are combined in the helmet in order to track the user's head movements. The first development kit is however unable to detect translation movement.
 
 \begin{figure}[h]
   \centering
   \includegraphics[scale=0.2]{OculusBack.jpg}
-  \caption{\label{oculusback} The Oculus Rift}
+  \caption{\label{fig:oculusback} The Oculus Rift}
 \end{figure}
 
 The major drawback of the Rift is the resolution of the screen. The screen-door effect is predominant and prevent a total immersion in the displayed scene. The second version of the Development Kit comes with a resolution of 960x1080 per eye, decreasing this effect. This next version comes also with a camera, tracking the movement of the head, in order to detect translation in addition to rotation.
 
-The success of the Oculus Rift leads other companies to develop similar devices. Sony presented few months ago the project Morpheus \cite{Morpheus} -- shown in figure~\ref{morpheus}, highly similar to the Oculus Rift.
+The success of the Oculus Rift leads other companies to develop similar devices. Sony presented few months ago the project Morpheus \cite{Morpheus} -- shown in figure~\ref{fig:morpheus}, highly similar to the Oculus Rift.
 
 \begin{figure}[h]
   \centering
   \includegraphics[scale=0.3]{Morpheus.jpg}
-  \caption{\label{morpheus} Sony Morpheus}
+  \caption{\label{fig:morpheus} Sony Morpheus}
 \end{figure}
 
 Sony Morpheus uses a comparable technology to Oculus Rift. The most noticable difference is that Morpheus has tracking technology all around it, whereas Oculus Rift only has tracking captors on the front and on the sides of the display.
@@ -95,7 +95,7 @@ During the Google I/O 2014, Google introduced the Cardboard Project. The idea is
 \begin{figure}[h]
   \centering
   \includegraphics[scale=0.3]{GoogleCardboard.png}
-  \caption{\label{cardboard} The Google Cardboard project}
+  \caption{\label{fig:cardboard} The Google Cardboard project}
 \end{figure}
 
 The advantage of Google Carboard is that it uses the sensors in the smartphone for the head positionning. Every recent smartphone is equiped with a gyroscope and a magnetometer, so the head tracking is easy to achieve.
@@ -105,12 +105,12 @@ Samsung is developping a similar headset called Gear VR. Little information are 
 The main advantage of smartphones is the high pixel density of the screen. The LG G3 offers a 538 ppi screen, when the first Oculus Rift development kit has \textit{only} a 216 ppi screen. This high density screen counters the screen door effect.
 
 \subsubsection{Vrvana Totem}
-The Totem, developed by Vrvana \cite{Vrvana}, is similar to the Oculus Rift, except that two cameras are embedded on the front of the headset -- see figure~\ref{tpg}. The idea is that each camera captures the view of one eye.
+The Totem, developed by Vrvana \cite{Vrvana}, is similar to the Oculus Rift, except that two cameras are embedded on the front of the headset -- see figure~\ref{fig:tpg}. The idea is that each camera captures the view of one eye.
 
 \begin{figure}[h]
   \centering
   \includegraphics[scale=0.3]{TruePlayerGear.jpg}
-  \caption{\label{tpg} The Totem, with two cameras}
+  \caption{\label{fig:tpg} The Totem, with two cameras}
 \end{figure}
 
 The lens distorsion is computed directly via the hardware in the headset. The others characteristics are higly similar to the Oculus Rift. The Totem is very interesting thanks to these embedded cameras. We want to achieve a new type of augmented reality. The Totem directly captures what the eyes would see. This guarantees an almost perfect 3D image for the user. However, the 3D reconstruction is more difficult - as seen in section~\ref{subsec:stereocam}.
@@ -119,20 +119,20 @@ The lens distorsion is computed directly via the hardware in the headset. The ot
 For rendering the scene in a virtual reality headset, we need to capture the scene surrounding the user. We can not just extract features from the scene. We need dense information about the scene in real time in order to create the corresponding 3D surface. In this part we present different devices that can compute a point cloud in real time.
 
 \subsubsection{Structured light scanning}
-Structured light scanning is a technique used for computing a depth map from the projection of near IR light patterns on the scene. The device project an IR light pattern on the surface of the room. Depending on the depth of the objects, the pattern is bigger or smaller than the reference pattern. Thus we can infer a depth map by reading the projection of the IR pattern. An exemple of pattern is presented in figure~\ref{kinectir}.
+Structured light scanning is a technique used for computing a depth map from the projection of near IR light patterns on the scene. The device project an IR light pattern on the surface of the room. Depending on the depth of the objects, the pattern is bigger or smaller than the reference pattern. Thus we can infer a depth map by reading the projection of the IR pattern. An exemple of pattern is presented in figure~\ref{fig:kinectir}.
 
 \begin{figure}[h]
   \centering
   \includegraphics[scale=0.3]{Kinect-ir-image.png}
-  \caption{\label{kinectir} Kinect IR pattern}
+  \caption{\label{fig:kinectir} Kinect IR pattern}
 \end{figure}
 
-This technique is used by the first Kinect -- figure~\ref{kinect}. The resolution of the depth map is $320*240$ points. Other devices using this technique exist, such as the Asus Xtion or the PrimeSense Capri sensor.
+This technique is used by the first Kinect -- figure~\ref{fig:kinect}. The resolution of the depth map is $320*240$ points. Other devices using this technique exist, such as the Asus Xtion or the PrimeSense Capri sensor.
 
 \begin{figure}[h]
   \centering
   \includegraphics[scale=0.3]{kinect1.jpg}
-  \caption{\label{kinect} First Kinect. From left to right: IR Pattern projector, IR Camera for reading the projected pattern, RGB camera}
+  \caption{\label{fig:kinect} First Kinect. From left to right: IR Pattern projector, IR Camera for reading the projected pattern, RGB camera}
 \end{figure}
 
 It is now possible to create very small IR light projector and IR light captor. The Capri sensor is ten times smaller than the Kinect sensor and can be easily mounted on a tablet or a virtual reality headset. Google Project Tango, a tablet with 3D sensing capabilities, is supposed to use the PrimeSense Capri sensor for capturing 3D information.
@@ -142,37 +142,37 @@ However, the use of structured light comes with drawbacks. In very luminous area
 \subsubsection{Time of Flight}
 A Time of Flight camera is estimating the distance of a point based on the known speed of light. The camera relies on light pulse. The illumination is switched on for a very short time on one point. The light reflects on the object and is gathered by the camera. The delay between the start of the pulse and the gathering by the camera is the time taken by the light to travel twice the distance between the camera and the object. Knowing the speed of light, we can deduce the distance of the point.
 
-Kinect 2 is using a time of flight camera -- figure~\ref{kinect2}. The resolution is much higher than Kinect one, since Kinect 2 produces a $512*424$ depth map. The time of flight doesn't suffer from illumination problems, position problems or distance problems. The depth distribution is not coarse in the remote areas, allowing a nice accuracy of the measurements -- see figure~\ref{depthK2}.
+Kinect 2 is using a time of flight camera -- figure~\ref{fig:kinect2}. The resolution is much higher than Kinect one, since Kinect 2 produces a $512*424$ depth map. The time of flight doesn't suffer from illumination problems, position problems or distance problems. The depth distribution is not coarse in the remote areas, allowing a nice accuracy of the measurements -- see figure~\ref{fig:depthK2}.
 
 \begin{figure}[h]
   \centering
   \includegraphics[scale=0.3]{kinect2.jpg}
-  \caption{\label{kinect2} Kinect 2}
+  \caption{\label{fig:kinect2} Kinect 2}
 \end{figure}
 
 \begin{figure}[h]
   \centering
   \includegraphics[scale=0.3]{kinect2depth.jpg}
-  \caption{\label{depthK2} Depth map with the time of flight camera of the Kinect 2}
+  \caption{\label{fig:depthK2} Depth map with the time of flight camera of the Kinect 2}
 \end{figure}
 
-However, Time Of Flight cameras are very expensive, especially for 30Hz processing of the environment. Until recently, real-time TOF cameras had a lower resolution than the Kinect 1. Due to the nature of light reflectivity, the depth estimation is less reliable when the light ray is not perpendicular to the surface. Figure~\ref{depthK2} shows a lot of noise and holes at the extremities of the depth map.
+However, Time Of Flight cameras are very expensive, especially for 30Hz processing of the environment. Until recently, real-time TOF cameras had a lower resolution than the Kinect 1. Due to the nature of light reflectivity, the depth estimation is less reliable when the light ray is not perpendicular to the surface. Figure~\ref{fig:depthK2} shows a lot of noise and holes at the extremities of the depth map.
 
 \subsubsection{Stereo camera}
 \label{subsec:stereocam}
 Stereoscopy uses two or more pictures for finding corresponding features and replace them in 3D space. Given two images of the same object from slightly different points of view, we identify the features that appear on both images. This search is easily performed with the use of Computational Stereo techniques, such as the computation of the epipolar lines. Since we know where the images have been taken relatively to each others, we can compute the depth of the feature. We perform this for every features and we retrieve a point cloud with the approximate same resolution as the images taken.
 
-The chinese company Etron is selling very small devices with two optical captors and a processor for computing the depth map. A resulting depthmap is shown in figure~\ref{etron}.
+The chinese company Etron is selling very small devices with two optical captors and a processor for computing the depth map. A resulting depthmap is shown in figure~\ref{fig:etron}.
 
 \begin{figure}[h]
   \centering
   \includegraphics[scale=0.3]{EtronDepth.png}
-  \caption{\label{etron} Depth map with two stereo camera}
+  \caption{\label{fig:etron} Depth map with two stereo camera}
 \end{figure}
 
 Stereo camera system is the cheaper system for retrieving a point cloud. It only requires some calibration and computation, but it is not a very expensive hardware compared to the other two systems.
 
-The computed depth map is unfortunately very noisy. There is a lot of noise when we compute the depth map. Shadow effects can be seen on figure~\ref{etron}. Moreover it is very difficult to compute a distance for uniform area, since no feature information can be retrieved. We need to extrapolate the distance based  on the surrounding information, but this leads to low fidelity reconstruction of the scene.
+The computed depth map is unfortunately very noisy. There is a lot of noise when we compute the depth map. Shadow effects can be seen on figure~\ref{fig:etron}. Moreover it is very difficult to compute a distance for uniform area, since no feature information can be retrieved. We need to extrapolate the distance based  on the surrounding information, but this leads to low fidelity reconstruction of the scene.
 
 \subsection{Conclusion}
 
@@ -190,9 +190,11 @@ For the reconstruction of the scene and the localization of the user, we use the
 Each of this stage is performed in parallel on the GPU using CUDA.
 
 \subsubsection{Depth Map conversion}
-The depth map is a 2D array of float. At time $i$, for each pixel $u(x,y)$ we have the corresponding depth $D_i(u)$. Given the calibration matrix $K$ of the Kinect infrared camera, we can compute the 3D position in the camera coordinate space. For each pixel $u$, a GPU thread compute the 3D position as follow:
+The depth map is a 2D array of float. At time $i$, for each pixel $u(x,y)$ we have the corresponding depth $D_i(u)$. The camera matrix is a $4\times 3$ matrix that links a 3D world point to a 2D image point. We are working with homogeneous coordinates, meaning a 2D vector is represented by 3 coordinates and a 3D vector is represented by 4 coordinates. The homogeneous representation makes it easier to compute translation via matrix multiplications.
+
+Given the calibration matrix $K$ of the Kinect infrared camera, we can compute the 3D position in the camera coordinate space. For each pixel $u$, a GPU thread compute the 3D position as follow:
 $$v_i(u) = D_i(u)K^{-1}[u,1]$$
-The results are saved in a single vertex map $V_i$.
+$[u,1]$ are the homogeneous coordinates of the pixel. $K^{-1}[u,1]$ gives us corresponding 3D point at distance 1 from the camera. The results are saved in a single vertex map $V_i$.
 
 We also compute the corresponding normal map, as it will be useful later for the ICP algorithm. Each normal $n_i(u)$ is computed by a GPU thread using the neighboring reprojected points:
 $$n_i(u) = (v_i(x+1,y) - v_i(u))\times (v_i(x,y+1) - v_i(u))$$
@@ -240,7 +242,7 @@ Instead, we use a volumetric representation based on \cite{VolRep}. A 3D volume 
 
 In KinectFusion, the value stored in a voxel is a Truncated Signed Distance Function -- TSDF \cite{VolRep}. This representation can easily be kept up to date with incoming data points -- Kinect provides roughly 5 millions measurements each second. It can handle uncertainty in the data, deal with multiple measurements and fill holes as new measurements are done.
 
-To achieve a real time integration of the 3D vertices, KinectFusion uses a GPU implementation. The 3D voxel grid is stored on the GPU as aligned linear memory. This implementation is not memory efficient -- a $512^3$ volume with 32-bits voxels requires 512MB of memory -- but speed efficient. Due to the linear alignement, access from the GPU threads are faster because the access can be coalesced. Algorithm~\ref{algo2} describes the main steps of the GPU implementation. Because there is a large number of voxels, it is impossible to launch one thread per voxel. To ensure a coalesced memory access, each GPU thread is assigned to a $(x,y)$ position at the front of the 3D voxel grid. In parallel, GPU threads go through the volume, moving along the Z-axis. Since the resolution and the physical dimensions are known, a voxel can be converted into a 3D positions in global coordinate space. We can calculate the distance between the voxel and the camera position -- $t_i$ -- and we can project the vertex back onto the image plane to know the actual depth measured along the ray. The difference gives the new SDF value for the voxel (line 7). The SDF is then normalized to a TSDF (line 9 and 11) and averaged with the previous stored value    (line 13).
+To achieve a real time integration of the 3D vertices, KinectFusion uses a GPU implementation. The 3D voxel grid is stored on the GPU as aligned linear memory. This implementation is not memory efficient -- a $512^3$ volume with 32-bits voxels requires 512MB of memory -- but speed efficient. Due to the linear alignement, access from the GPU threads are faster because the access can be coalesced. Algorithm~\ref{algo2} describes the main steps of the GPU implementation. Because there is a large number of voxels, it is impossible to launch one thread per voxel. To ensure a coalesced memory access, each GPU thread is assigned to a $(x,y)$ position at the front of the 3D voxel grid. In parallel, GPU threads go through the volume, moving along the Z-axis. Since the resolution and the physical dimensions are known, a voxel can be converted into a 3D positions in global coordinate space. We can calculate the distance between the voxel and the camera position -- $t_i$ -- and we can project the vertex back onto the image plane to know the actual depth measured along the ray. The difference gives the new SDF value for the voxel (line 7). The SDF is then normalized to a TSDF (line 9 and 11) and averaged with the previous stored value (line 13).
 
 \begin{algorithm}
 \caption{Projective TSDF integration}\label{algo2}
@@ -297,7 +299,7 @@ Once the vertices are integrated, we need to render the 3D scene from the point 
 \subsubsection{Calculating the orientation}
 The Oculus Rift Headtracking system uses a gyroscope, an accelerometer and a magnetometer \cite{Oculus2}. Steve LaValle described in two different blog posts \cite{OculusBlog1, OculusBlog2} how the headtracking was working.
 
-The orientation of a rigid body can be expressed with 3 angles: \textit{yaw}, \textit{pitch} and \textit{roll}. Figure~\ref{ypr} illustrates these 3 angles. While they are easy to understand and represent, these angles cause trouble due to numerical singularities -- gimbal lock \cite{lock}, and it comes with a huge numbers of incompatible definitions, regrouped under the \textit{Euler angles} name. The use of \textit{quaternions} instead overcome these problems \cite{Quat}.
+The orientation of a rigid body can be expressed with 3 angles: \textit{yaw}, \textit{pitch} and \textit{roll}. Figure~\ref{fig:ypr} illustrates these 3 angles. While they are easy to understand and represent, these angles cause trouble due to numerical singularities -- gimbal lock \cite{lock}, and it comes with a huge numbers of incompatible definitions, regrouped under the \textit{Euler angles} name. The use of \textit{quaternions} instead overcome these problems \cite{Quat}.
 
 The gyroscope inside the Rift measures a vector $(\omega_x,\omega_y,\omega_z)$ corresponding to the angular velocity along each axis. Since we are using quaternions, we need the angle of the rotation and the axis of the rotation. $(\omega_x,\omega_y,\omega_z)$ is the rotation axis once it is normalized. The length of $(\omega_x,\omega_y,\omega_z)$ is the angular speed of rotation along that axis.
 
@@ -307,7 +309,7 @@ $$\text{Current quaternion = Previous quaternion} * \text{Quat(axis, angle)}$$
 \begin{figure}[h]
   \centering
   \includegraphics[scale=3]{OculusHead.jpg}
-  \caption{\label{ypr} The 3 angles characterizing the orientation of the head}
+  \caption{\label{fig:ypr} The 3 angles characterizing the orientation of the head}
 \end{figure}
 
 The Euler Integration is not an exact method and the gyroscope measurements are not 100\% accurate. Thus the true orientation is drifting away from the calculated orientation. Other sensors are needed to correct the orientation. The accelerometer is used for correcting the \textit{tilt error} -- where the up direction is -- while the magnetometer is used to correct the \textit{yaw error}.
@@ -320,21 +322,21 @@ The up direction is defined by the gravity and the acceleration vector, which is
 \end{enumerate}
 There are some flaws in this method. It is possible to cancel the gravity acceleration by moving down while creating a lateral acceleration of $9.81m/s^2$. However this method is simple enough and works in the vast majority of cases.
 
-Once the acceleration vector $a$ is found, the angle $\phi$ between $a$ and the $z$-axis is computed. The rotation axis is called the tilt axis and correspond to $(-a_z, 0, a_x)$. Rotating along this axis of angle $\phi$ re-aligns the up direction correctly -- see Figure~\ref{tilt}.
+Once the acceleration vector $a$ is found, the angle $\phi$ between $a$ and the $z$-axis is computed. The rotation axis is called the tilt axis and correspond to $(-a_z, 0, a_x)$. Rotating along this axis of angle $\phi$ re-aligns the up direction correctly -- see Figure~\ref{fig:tilt}.
 
 \begin{figure}[h]
   \centering
   \includegraphics[scale=0.2]{tilt.png}
-  \caption{\label{tilt} Visulalisation of the tilt axis}
+  \caption{\label{fig:tilt} Visulalisation of the tilt axis}
 \end{figure}
 
 \subsubsection{Correction of the yaw error}
-The yaw error is corrected by using the magnetic field of the Earth. The magnetic field of the Eart can be represented by a 3D vector field -- with magnitude and direction. Since the user of the Rift stays in the same area, the magnetic field is assumed to be constant. The magnetometer can not directly measure the absolute magnetic field $m = (m_x, m_y, m_z)$ because it measures the field relative to its own orientation. The three-axis magnetometer measures $m$ projected on each of its axes. Figure~\ref{field} illustrates the issue in 2D.
+The yaw error is corrected by using the magnetic field of the Earth. The magnetic field of the Eart can be represented by a 3D vector field -- with magnitude and direction. Since the user of the Rift stays in the same area, the magnetic field is assumed to be constant. The magnetometer can not directly measure the absolute magnetic field $m = (m_x, m_y, m_z)$ because it measures the field relative to its own orientation. The three-axis magnetometer measures $m$ projected on each of its axes. Figure~\ref{fig:field} illustrates the issue in 2D.
 
 \begin{figure}[h]
   \centering
   \includegraphics[scale=0.2]{RotMag.png}
-  \caption{\label{field} Measurement of the magnetic field}
+  \caption{\label{fig:field} Measurement of the magnetic field}
 \end{figure}
 
 If the sensor is rotated anticlockwise by angle $\theta$, then the measured field is rotated by $-\theta$. So a magnetometer readind from inside the rift gives a clue about its orientation based on the sensed magnetic field vector.
@@ -352,25 +354,27 @@ The readings of the magnetometers are then used for calibrating the Rift. Once i
 Knowing the yaw error, the orientation of the Rift is ajusted accordingly.
 
 \subsection{Head mounted display and Lens deformation}
+\label{subsec:lensdef}
 The screen of the Rift -- sometimes called Head Mounted Display or HMD -- displays one image for the left part on the left part of the screen and one image for the right eye on the right part of the screen. The hardware is optimised for an interpupillary distance of 65mm. Two different images mean that we need to rendere the scene from two different points of view.
 
-The lenses in the Rift magnify the images, thus providing an almost real-life field of view. However, the lenses distort the images a lot. If we display the original 3D image on the screen, then the user observes a pincushion distortion effect \cite{OVRDoc} -- see Figure~\ref{pindist}.
+The lenses in the Rift magnify the images, thus providing an almost real-life field of view. However, the lenses distort the images a lot. If we display the original 3D image on the screen, then the user observes a pincushion distortion effect \cite{OVRDoc} -- see Figure~\ref{fig:pindist}.
 
-To avoid this distortion, we must post-processed the 3D rendered views. We apply an equal and opposite barrel distortion -- Figure~\ref{bardist} -- in order to cancel the puncushion distortion.
+To avoid this distortion, we must post-processed the 3D rendered views. We apply an equal and opposite barrel distortion -- Figure~\ref{fig:bardist} -- in order to cancel the puncushion distortion.
 
 \begin{figure}[h]
         \centering
         \begin{subfigure}[b]{0.3\textwidth}
                 \includegraphics[scale=1]{PinDist.png}
                 \caption{Pincushion distortion}
-                \label{pindist}
+                \label{fig:pindist}
         \end{subfigure}
         \begin{subfigure}[b]{0.3\textwidth}
                 \includegraphics[scale=1]{BarDist.png}
                 \caption{Barrel distortion}
-                \label{bardist}
+                \label{fig:bardist}
         \end{subfigure}
         \caption{Distortion of the lenses}
+        \par
 \end{figure}
 
 The lenses cause also chromatic aberrations on the edges of the field of view.
@@ -378,15 +382,52 @@ The lenses cause also chromatic aberrations on the edges of the field of view.
 \newpage
 \section{Implementation}
 The implementation was made in C++ and in CUDA. It is based on kfusion, an implementation of KinectFusion developed by Gerhard Reitmayr.
+
 \subsection{kfusion}
 
+
 \subsection{Lens deformation}
+\label{subsec:deformation}
+As said in subsection~\ref{subsec:lensdef}, we need to apply a barrel distortion to the image if we want to display it correctly in the Rift. Two methods are possible. The first one constists to render a normal 3D image and then distort it. The second method is to raycast directly with the lens model and not with the camera model.
+
+\subsubsection{Rendering and distorting} ~\\
+
+
+\subsubsection{Lens raycasting} ~\\
+
 
 \subsection{Color rendering}
+In the original KinectFusion implementation, color isn't display directly on screen. It is recorded, averaged and then displayed for an offline view of the recorded model. In our implementation, we want to use color since we want the user to be fully immersed in the surrounding scene: a gray-scale world is not realistic. We use the Kinect camera and project on the scene the live color information. This techniques provides a direct feedback of the scene, before the volumetric integration is even done. The scene seems more natural to the user.
+
+Once we raycasted a pixel, we want to find the corresponding pixel on the Kinect RGB image. We convert the 3D point back to non-global coordinates and then back to camera coordinates as follow:
+$$u = KT_{i}^{-1}[x, y, z, 1]$$
+$$p = [u.x/u.z, u.y/u.z]$$
+
+$p$ is the corresponding pixel on the RGB image. If $p$ is out of bound, that means the raycasted pixel is not in the camera image. Therefore we render in gray scale. Else we have the color from the image and we can render the view in color. Figures~\ref{fig:nanb} and~\ref{fig:colorex} show the differences of a frame without colors and one with colors.
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.3]{NBExample.png}
+  \caption{\label{fig:nanb} Scene without live colors}
+\end{figure}
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.3]{ColorExample.png}
+  \caption{\label{fig:colorex} Scene with live colors}
+\end{figure}
+
+Figure~\ref{fig:colorex} still shows a lot of grey scale areas. However we have to keep in mind that this image is then distorted with the barrel distortion -- see subsection~\ref{subsec:deformation}. With the barrel distortion and the human field of view, we can consider that almost 60\% of the field of view is seen in color. Figure~\ref{fig:oculuscolor} shows the Oculus distorted rendering with colors.
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.3]{ColorRift.png}
+  \caption{\label{fig:colorex} Scene displayed on the Oculus Rift with colors}
+\end{figure}
 
 \subsection{Oculus Calibration}
 
-\subsection{Magic Pen}
+\subsection{Magical Pen}
 One of the goal of this project was to create an augmented reality application. We wanted to create an interactive application, not just a visual one. The original KinectFusion provided an augmented application where the user could draw on a surface with his/her hands. However, the visualization was difficult. The user was standing in front of the Kinect and didn't have a direct feedback of what he was drawing.
 
 With the Oculus Rift, the user can see directly what he is drawing. It is then much more immersive.
@@ -448,6 +489,17 @@ $$pen^g = t_i + d*dir_{norm}$$
 where $t_i$ is the current position of the Kinect.
 
 \subsubsection{Writing on the surface}
+Now that the successive positions of the pen are known, we have to colorize the parts of the scene where the pen wrote. We tried two different techniques for rendering the drawings. The first technique uses a vector, which stores all the positions of the pen. For every pixel to be rendered, we have a 3D position -- computed thanks to the raycasting. We compute the distance between the pixel position and the positions of the pen. If this distance is smaller than a threshold, the pixel is colorized in blue.
+
+The main problem with this method is that it is extremely slow. With 5 stored positions in the position vector, the rendering is running at 10-15 frames per second. With 20 stored positions in the position vector, the rendering is running lower than 1 frame per second.
+
+In order to limit the number of positions stored in the vector, we filter the incoming position: if the distance between the incoming position and the last position in the vector is smaller than a threshold, we don't add the incoming position to the vector. This simple filtering step prevents us to add a new position for every frame and thus limits greatly the number of stored positions. However, the filtering step is not sufficient for the rendering to run smoothly.
+
+The second technique is based on a 3D grid. We divide the space with a grid of voxels. Each voxel stores a boolean. The grid is initialized to false for every voxel. When we compute the 3D position of the pen, we look at the corresponding voxel and set its value to true. Then when we render a pixel, we look at the corresponding voxel. If the value stored is true, we colorize the pixel.
+
+Using a 3D grid is memory expensive. In our implementation, we use voxel with a size of 5mm forming a $1000*1000*1000$ voxels grid. Since a boolean has a size of 1 byte, the grid occupies 1GB of memory. On the other hand, the rendering is running smoothly, even after a long run time.
+
+There are some drawbacks when using the 3D grid. The first drawback is the aspect of the drawing. Because we are using a voxel grid, the drawings look pixelated. Another issue is that the pen position isn't always correctly detected. The misdetection can leave a gap in the drawing. To solve this issue, we do not only set the value of the corresponding voxel to true but also the neighboring voxels are set to true.
 
 \newpage
 \section{Results}
