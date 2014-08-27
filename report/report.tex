@@ -31,6 +31,21 @@
 \usepackage{subcaption}
 %\usepackage{hyperref}
 \usepackage[noend]{algpseudocode}
+\usepackage{listings}
+\usepackage{xcolor} % for setting colors
+\usepackage{courier}
+
+% set the default code style
+\lstset{
+    frame=tb, % draw a frame at the top and bottom of the code block
+    tabsize=2, % tab space width
+    showstringspaces=false, % don't mark spaces in strings
+    numbers=left, % display line numbers on the left
+    commentstyle=\color{gray}, % comment color
+    keywordstyle=\color{blue}, % keyword color
+    stringstyle=\color{red}, % string color
+    basicstyle=\footnotesize\ttfamily
+}
 
 \title{OFusion\\
 \large{CO542 Individual Project}}
@@ -174,7 +189,15 @@ Stereo camera system is the cheaper system for retrieving a point cloud. It only
 
 The computed depth map is unfortunately very noisy. There is a lot of noise when we compute the depth map. Shadow effects can be seen on figure~\ref{fig:etron}. Moreover it is very difficult to compute a distance for uniform area, since no feature information can be retrieved. We need to extrapolate the distance based  on the surrounding information, but this leads to low fidelity reconstruction of the scene.
 
+\subsection{Similar projects}
+The combination of the Oculus Rift with the Kinect has been achieved -- to our knowledge -- recently by some researchers.
+
+Thomas Whelan has combined the Oculus Rift and its algorithm Kintinuous \cite{KinRift} -- an extension of KinectFusion algorithm. Kintinuous scans the surrounding scene and computes offline the geometry and the colors of the scene. Then the user puts on the Oculus Rift and the Kinect is set in front of the Rift. The Kinect acts here as the position tracker of the Rift. No live colors are displayed and the user doesn't have any feedback from is body. Because there is not body awareness and no live feedback when the user is moving an object, the experience can be quite disturbing.
+
+Steven Lovegrove has combined the Oculus Rift and KinectFusion \cite{OculusFusion}. This prototype is close to what we are doing in this project. The Kinect simultaneously captures the scene and track the position of the Rift. However, there is no color in this implementation.
+
 \subsection{Conclusion}
+
 
 \newpage
 \section{Design/Theory}
@@ -384,17 +407,72 @@ The lenses cause also chromatic aberrations on the edges of the field of view.
 The implementation was made in C++ and in CUDA. It is based on kfusion, an implementation of KinectFusion developed by Gerhard Reitmayr.
 
 \subsection{kfusion}
+TODO: Description of the program
+
+This project was the first time I was re-using an existing code. Before that, I always coded from scratch my projects or I was using libraries. With kfusion I had to understand how the whole code was functionning before starting to write code.
+
+\subsubsection{Description of the implementation}
+The core of the software resides in \texttt{kfusion.h} and \texttt{kfusion.cu}. These two files describes the objects used for the volumetric integration and the tracking of the user. The object \texttt{KFusion} is the key of KFusion. It stores the volumetric description, the current and past vertex maps and normal maps. 
+
+\texttt{kinect.cpp} is the main file of kfusion.
+
+\texttt{helpers.cu} is the file that concentrates most of the rendering functions.
+\subsubsection{Choice of the parameters}
 
 
 \subsection{Lens deformation}
 \label{subsec:deformation}
 As said in subsection~\ref{subsec:lensdef}, we need to apply a barrel distortion to the image if we want to display it correctly in the Rift. Two methods are possible. The first one constists to render a normal 3D image and then distort it. The second method is to raycast directly with the lens model and not with the camera model.
 
-\subsubsection{Rendering and distorting} ~\\
+\subsubsection{Rendering and distorting}
+For the visualization inside the Rift, we need two renderings at two different points of view. We create two \textit{virtual cameras} either side of the Kinect camera. The two cameras are created from $K^{-1}$ by adding or subtracting an offset along the x-axis. Once we have the two modified matrices, we render the two scenes with the raycasting algorithm.
 
+We know need to distort the two images. The Oculus SDK doesn't provide a tool for an already rendered image.
 
-\subsubsection{Lens raycasting} ~\\
+\subsubsection{Lens raycasting}
+The second method consist to raycast directly the distorted scene. The idea is to raycast using the lens model and not the camera model. This method avoid sampling problem when distorting the already rendered image. Given a pixel to render, we need to compute the corresponding direction for the raycasting. Listing~\ref{lst:lensray} shows the transformation from a pixel coordinate $uv$ to a ray.
 
+\begin{lstlisting}[language=C++, caption={C++ code for the Lens distortion}, label={lst:lensray}]
+float f = 204.4f; // focal length
+float2 iResolution = make_float2(1280, 800); // Size of the final image:
+                                             // the Oculus Rift DK1 has
+                                             // a resolution of 1280*800
+float DistortScale = 1.71461;
+float pp_adjust = 48.62;
+float3 K = make_float3(1.00f, 0.22f, 0.24f); // Camera polynomial model
+                                             // of the Lens
+
+const uint2 pos = thr2pos2();
+float2 uv = make_float2(pos.x, pos.y); // pixel coordinate
+    
+// Which eye?
+float i = uv.x <= iResolution.x/2.0 ? 0.0 : 1.0;
+
+// Compute Principle point
+float sx = i*2.0 - 1.0;
+float2 pp = make_float2(sx*(iResolution.x/4.0 - pp_adjust) + iResolution.x/2.0,
+                        iResolution.y/2.0);
+
+// Distort uv for Oculus (using res independant coords)
+float2 theta = make_float2(4.0*(uv.x-pp.x)/iResolution.x,
+                           4.0*(uv.y-pp.y)/iResolution.x);
+float rSq= theta.x * theta.x + theta.y * theta.y;
+uv.x = pp.x + iResolution.x*theta.x*(K.x+rSq*(K.y+rSq*K.z))/(4.0*DistortScale);
+uv.y = pp.y + iResolution.x*theta.y*(K.x+rSq*(K.y+rSq*K.z))/(4.0*DistortScale);
+
+float2 uvMinusPp = make_float2(uv.x - pp.x, uv.y - pp.y);
+uvMinusPp.x /= f;
+uvMinusPp.y /= f;
+
+float3 ray = make_float3(uvMinusPp.x, uvMinusPp.y, 1.0f);
+float rayNorm = sqrt(ray.x*ray.x + ray.y*ray.y + ray.z*ray.z);
+ray.x /= rayNorm;
+ray.y /= rayNorm;
+ray.z /= rayNorm;
+// ray is the direction for the raycasting
+\end{lstlisting}
+
+TODO: Explain the camera model
 
 \subsection{Color rendering}
 In the original KinectFusion implementation, color isn't display directly on screen. It is recorded, averaged and then displayed for an offline view of the recorded model. In our implementation, we want to use color since we want the user to be fully immersed in the surrounding scene: a gray-scale world is not realistic. We use the Kinect camera and project on the scene the live color information. This techniques provides a direct feedback of the scene, before the volumetric integration is even done. The scene seems more natural to the user.
@@ -422,10 +500,61 @@ Figure~\ref{fig:colorex} still shows a lot of grey scale areas. However we have 
 \begin{figure}[!h]
   \centering
   \includegraphics[scale=0.3]{ColorRift.png}
-  \caption{\label{fig:colorex} Scene displayed on the Oculus Rift with colors}
+  \caption{\label{fig:oculuscolor} Scene displayed on the Oculus Rift with colors}
 \end{figure}
 
-\subsection{Oculus Calibration}
+\subsection{Oculus Rift Calibration}
+
+Our prototype is rudimentary. The Kinect is attached to the Rift thanks to paper clips and rubber band -- see Figure~\ref{fig:prototype}. This cause multiples issues:
+\begin{enumerate}
+\item The Kinect can move slightly compared to the Rift. So the direction of view of the Kinect is not the same as the Rift direction view. This is a prime issue because the user head position will not match the incoming view from the Kinect. If the user is looking straight ahead and he sees his feet, it is going to confuse the brain -- and it will be painful if the user wants to really look straight ahead by tilting his head back.
+\item The position of the Kinect is not the same as the user point of view. Because of the size of the Rift and the size of the Kinect, the distance between the point of view of the user and the point of view of the Kinect is around 20cm.
+\end{enumerate}
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.3]{Prototype.jpg}
+  \caption{\label{fig:prototype} Our prototype}
+\end{figure}
+
+\subsubsection{Oculus orientation and Kinect orientation}
+In order to correctly calibrate the Oculus orientation with the Kinect orientation, we have one requirement: the Kinect should be correctly aligned with the Rift when the program is launched. If the two devices are not aligned, there is no possibility to estimate the transformation between the Kinect space and the Oculus space.
+
+Given that the two devices are correctly aligned, they have the same orientation. During the first loop of the algorithm, we compute the orientation of the Kinect -- more precisely the Rotation matrix $R_i$ -- and the orientation of the Oculus thanks to the gyroscope, magnetometer and accelerometer. The computation of the transformation between the two rotation matrices is done easily: the transformation is a rotation made of the rotation matrix $R_i$ multiply by the inverse of the rotation matrix of the Oculus Rift. The inverse of a rotation matrix is easy to compute since it is only the transpose of the rotation matrix. Listing~\ref{lst:calibration} shows the code for the calibration.
+
+\begin{lstlisting}[language=C++, caption={C++ code for finding the transformation between the Kinect and the Rift}, label={lst:calibration}]
+Mat3 rotHMDtoKINECT;
+Matrix4 hmdPose;
+Matrix4 kinectPose;
+Mat3 hmdRot = getRot(hmdPose);
+Mat3 kinectRot = getRot(kinectPose);
+Mat3 transHmdRot = transpose(hmdRot);
+rotHMDtoKINECT = multiply(transHmdRot,kinectRot);
+\end{lstlisting}
+
+The rotation matrix of the Rift is compute from the Euler angles. The Oculus SDK has a function capable of returning the yaw, pitch and roll angles -- respectively the angle along the $y$-axis, the $x$-axis and the $z$-axis. Listing~\ref{lst:euler} shows the computation of the rotation matrix of the Oculus Rift.
+
+\begin{lstlisting}[language=C++, caption={C++ code for computing the rotation matrix of the Rift}, label={lst:euler}]
+void viewMatrixUpdate(Matrix4 & ovrPose, float yYaw, float zEyeRoll, float xEyePitch){
+  ovrPose.data[0].x = cos(yYaw)*cos(zEyeRoll)
+                    + sin(yYaw)*sin(xEyePitch)*sin(zEyeRoll);
+  ovrPose.data[0].y = cos(zEyeRoll)*sin(yYaw)*sin(xEyePitch)
+                    - cos(yYaw)*sin(zEyeRoll);
+  ovrPose.data[0].z = cos(xEyePitch)*sin(yYaw);
+        
+  ovrPose.data[1].x = cos(xEyePitch)*sin(zEyeRoll);
+  ovrPose.data[1].y = cos(xEyePitch)*cos(zEyeRoll);
+  ovrPose.data[1].z = - sin(xEyePitch);
+        
+  ovrPose.data[2].x = cos(yYaw)*sin(xEyePitch)*sin(zEyeRoll)
+                    - cos(zEyeRoll)*sin(yYaw);
+  ovrPose.data[2].y = sin(yYaw)*sin(zEyeRoll)
+                    + cos(yYaw)*cos(zEyeRoll)*sin(xEyePitch);
+  ovrPose.data[2].z = cos(yYaw)*cos(xEyePitch);
+}
+\end{lstlisting}
+
+\subsubsection{Point of view correction}
 
 \subsection{Magical Pen}
 One of the goal of this project was to create an augmented reality application. We wanted to create an interactive application, not just a visual one. The original KinectFusion provided an augmented application where the user could draw on a surface with his/her hands. However, the visualization was difficult. The user was standing in front of the Kinect and didn't have a direct feedback of what he was drawing.
@@ -501,6 +630,22 @@ Using a 3D grid is memory expensive. In our implementation, we use voxel with a 
 
 There are some drawbacks when using the 3D grid. The first drawback is the aspect of the drawing. Because we are using a voxel grid, the drawings look pixelated. Another issue is that the pen position isn't always correctly detected. The misdetection can leave a gap in the drawing. To solve this issue, we do not only set the value of the corresponding voxel to true but also the neighboring voxels are set to true.
 
+\subsubsection{Results}
+The Magical pen gives good results. Figures~\ref{fig:pen1} and~\ref{fig:pen2} show drawings as rendered in the Rift.
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.3]{pen1.png}
+  \caption{\label{fig:pen1} Drawing in augmented reality}
+\end{figure}
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.3]{pen2.png}
+  \caption{\label{fig:pen2} Drawing in augmented reality}
+\end{figure}
+However, 
+
+~~~
 \newpage
 \section{Results}
 \subsection{3D rendering}
