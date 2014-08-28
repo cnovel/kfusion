@@ -407,18 +407,55 @@ The lenses cause also chromatic aberrations on the edges of the field of view.
 The implementation was made in C++ and in CUDA. It is based on kfusion, an implementation of KinectFusion developed by Gerhard Reitmayr.
 
 \subsection{kfusion}
-TODO: Description of the program
-
 This project was the first time I was re-using an existing code. Before that, I always coded from scratch my projects or I was using libraries. With kfusion I had to understand how the whole code was functionning before starting to write code.
 
-\subsubsection{Description of the implementation}
-The core of the software resides in \texttt{kfusion.h} and \texttt{kfusion.cu}. These two files describes the objects used for the volumetric integration and the tracking of the user. The object \texttt{KFusion} is the key of KFusion. It stores the volumetric description, the current and past vertex maps and normal maps. 
+\subsubsection{Short description of the implementation}
+The core of the software resides in \texttt{kfusion.h} and \texttt{kfusion.cu}. These two files describes the objects used for the volumetric integration and the tracking of the user. The object \texttt{KFusion} is the key of KFusion. It stores the volumetric description, the current and past vertex maps and normal maps.
 
-\texttt{kinect.cpp} is the main file of kfusion.
+\texttt{kinect.cpp} is the main file of kfusion. It contains the main loop for the volumetric integration, the pose estimation, the raycasting and displaying the rendered images. It also handles all the information about the Oculus Rift and its orientation. We use OpenGL only for displaying the image.
 
-\texttt{helpers.cu} is the file that concentrates most of the rendering functions.
+\texttt{helpers.cu} is the file that concentrates most of the rendering functions. It contains the rendering functions for the regular view and also for the Oculus distorted view.
+
 \subsubsection{Choice of the parameters}
+There are critical parameters to choose when using KinectFusion. Two of them are the size of the scene we want to map and the resolution of the corresponding volumetric representation. The size of the scene is in meters and corresponds to a cube. The resolution corresponds to the number of voxels along each axis.
 
+Figures~\ref{fig:highres} and~\ref{fig:lowres} shows the difference between a high-resolution parameter and a low-resolution parameter for the same volume size.
+
+\begin{figure}[h]
+        \centering
+        \begin{subfigure}[b]{0.45\textwidth}
+                \includegraphics[width=1\textwidth]{HighRes.png}
+                \caption{Volume size = 1m, Resolution = 700}
+                \label{fig:highres}
+        \end{subfigure}~
+        \begin{subfigure}[b]{0.45\textwidth}
+                \includegraphics[width=1\textwidth]{LowRes.png}
+                \caption{Volume size = 1m, Resolution = 128}
+                \label{fig:lowres}
+        \end{subfigure}
+        \caption{Resolution parameter}
+        \par
+\end{figure}
+
+Figures~\ref{fig:largevol} and~\ref{fig:smallvol} shows the difference between a large volume parameter and a small volume parameter for the same volume size.
+
+\begin{figure}[h]
+        \centering
+        \begin{subfigure}[t]{0.45\textwidth}
+                \includegraphics[width=1\textwidth]{VolLarge.png}
+                \caption{Volume size = 10m, Resolution = 640}
+                \label{fig:largevol}
+        \end{subfigure}~
+        \begin{subfigure}[t]{0.45\textwidth}
+                \includegraphics[width=1\textwidth]{VolSmall.png}
+                \caption{Volume size = 1m, Resolution = 640}
+                \label{fig:smallvol}
+        \end{subfigure}
+        \caption{Volume size parameter}
+        \par
+\end{figure}
+
+Clearly, a high resolution gives better looking result. However the higher the resolution, the more memory and computing power we ask from the GPU. 
 
 \subsection{Lens deformation}
 \label{subsec:deformation}
@@ -477,6 +514,7 @@ TODO: Explain the camera model
 \subsection{Color rendering}
 In the original KinectFusion implementation, color isn't display directly on screen. It is recorded, averaged and then displayed for an offline view of the recorded model. In our implementation, we want to use color since we want the user to be fully immersed in the surrounding scene: a gray-scale world is not realistic. We use the Kinect camera and project on the scene the live color information. This techniques provides a direct feedback of the scene, before the volumetric integration is even done. The scene seems more natural to the user.
 
+\subsubsection{Live color projection}
 Once we raycasted a pixel, we want to find the corresponding pixel on the Kinect RGB image. We convert the 3D point back to non-global coordinates and then back to camera coordinates as follow:
 $$u = KT_{i}^{-1}[x, y, z, 1]$$
 $$p = [u.x/u.z, u.y/u.z]$$
@@ -502,6 +540,23 @@ Figure~\ref{fig:colorex} still shows a lot of grey scale areas. However we have 
   \includegraphics[scale=0.3]{ColorRift.png}
   \caption{\label{fig:oculuscolor} Scene displayed on the Oculus Rift with colors}
 \end{figure}
+
+\subsubsection{Issues using live color projection}
+There are some issues when using live color projection. Because of the lag between the camera image and the rendering, the texture is sometimes misaligned with the model -- see Figure~\ref{fig:texture}.
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.5]{TextureIssue.png}
+  \caption{\label{fig:texture} The texture is not aligned with the model}
+\end{figure}
+
+The misalignement is better seen with high resolution for the volumetric representation. However we do not think that a high resolution volumetric representation is the cause for this texture isssue. A combination of two effects is likely to explain this phenomenon:
+\begin{enumerate}
+\item The RGB camera and the depth camera are not synchronised. The Kinect creates two images: a depth image -- called the depthmap, and a RGB image. But the two images are not computed at the exact time. When our program fetches the depth image and the RGB image, these two images are not from the exact same time, thus causing a shift between the model and the image.
+\item The RGB camera is subject to the rolling shutter effect. The rolling shutter is a technique used by some cameras to take a picture. Instead of reading and writing the whole pixel array at once, the rolling shutter scans quickly horizontally or vertically the pixel array. The use of a rolling shutter creates distortion effects such as wobble and skew. These effects can affect the live projection and thus creates a misalignement with the model.
+\end{enumerate}
+
+Live color projection presents another small issue: the RGB camera of the Kinect automatically adjusts to the ambient light intensity. Because they are reflections on the desks in the lab, sometimes the user can be blinded by the reflection because the camera didn't already adjust to the new light intensity.
 
 \subsection{Oculus Rift Calibration}
 
@@ -554,7 +609,39 @@ void viewMatrixUpdate(Matrix4 & ovrPose, float yYaw, float zEyeRoll, float xEyeP
 }
 \end{lstlisting}
 
+Once we have the rotation $R_{RtoK}$ between the Kinect and the Rift, we can use the Rift orientation for the rendering of the scene. The \textit{true} orientation of the Rift is easily calculated as $R_{RtoK}\times hmdRot$.
+
+So the rigid transform matrix we use for the rendering is $[R_{RtoK}\times hmdRot,t_i]$. This matrix solves the issue of Kinect movement compared to the Rift position.
+
 \subsubsection{Point of view correction}
+
+Because of the size of our prototype, the Kinect position is approximately 20cm in front of the eyes of the user. Since the Kinect position is closer to the scene than the head position, users have a hard time trying to grab objects without multiple tries.
+
+We adjust the position with the code presented in Listing~\ref{lst:position}.
+
+\begin{lstlisting}[language=C++, caption={C++ code for adjusting the position of the user}, label={lst:position}]
+float3 viewDirection = make_float3(0,0,-0.15f);
+float3 vecToAdd = rotateVec(ovrPose, viewDirection);
+ovrPose.data[0].w += vecToAdd.x;
+ovrPose.data[1].w += vecToAdd.y;
+ovrPose.data[2].w += vecToAdd.z;
+\end{lstlisting}
+
+Here we adjust the position of the head by backing the position of the head of 15cm. Line 1 creates the vector for backing the position. \texttt{ovrPose} is the rigid transformation matrix mentioned in the previous subsection. We transform the vector from Oculus space coordinates to global coordinates by multiplying the rotation matrix with the vector. Then we move the position of the rigid transformation matrix in Lines 3, 4 and 5.
+
+Figures~\ref{fig:notcorrect} and~\ref{fig:correct} shows the difference before the correction and after the correction.
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.3]{NotCorrected.png}
+  \caption{\label{fig:notcorrect} Rendered view before the correction}
+\end{figure}
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.3]{Corrected.png}
+  \caption{\label{fig:correct} Rendered view after the correction}
+\end{figure}
 
 \subsection{Magical Pen}
 One of the goal of this project was to create an augmented reality application. We wanted to create an interactive application, not just a visual one. The original KinectFusion provided an augmented application where the user could draw on a surface with his/her hands. However, the visualization was difficult. The user was standing in front of the Kinect and didn't have a direct feedback of what he was drawing.
