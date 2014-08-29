@@ -35,6 +35,7 @@
 \usepackage{xcolor} % for setting colors
 \usepackage{courier}
 
+\renewcommand*\lstlistingname{Code}
 % set the default code style
 \lstset{
     frame=tb, % draw a frame at the top and bottom of the code block
@@ -197,10 +198,12 @@ Thomas Whelan has combined the Oculus Rift and its algorithm Kintinuous \cite{Ki
 Steven Lovegrove has combined the Oculus Rift and KinectFusion \cite{OculusFusion}. This prototype is close to what we are doing in this project. The Kinect simultaneously captures the scene and track the position of the Rift. However, there is no color in this implementation.
 
 \subsection{Conclusion}
+Since the success of the Oculus Rift on Kickstarter, multiple companies are creating Virtual Reality headsets. With consummer versions scheduled for 2015, it is very probable that these headsets will encounter a great success. During the same time, huge progress has been made for light weight and cheap scanning devices for capturing the geometry of a scene surrounding the user. Therefore we think it is very probable to see augmented reality applications by combining these two kind of devices in the future.
 
+For our project, we use an Oculus Rift Development Kit 1 with a Kinect for Xbox 360.
 
 \newpage
-\section{Design/Theory}
+\section{Theoretical considerations}
 \subsection{KinectFusion}
 For the reconstruction of the scene and the localization of the user, we use the KinectFusion algorithm. The KinectFusion algorithm achieves real-time dense surface mapping and reconstruction. The algorithm is fully described in \cite{KF1, KF2}. The GPU implementation of KinectFusion allows the real time reconstruction and localization. The algorithm is composed of four main stages:
 \begin{enumerate}
@@ -455,7 +458,15 @@ Figures~\ref{fig:largevol} and~\ref{fig:smallvol} shows the difference between a
         \par
 \end{figure}
 
-Clearly, a high resolution gives better looking result. However the higher the resolution, the more memory and computing power we ask from the GPU. 
+Clearly, a high resolution gives better looking result. However the higher the resolution, the more memory and computing power we ask from the GPU.
+
+For our project, we need to combine a good resolution so that the user thinks the scene surrounding him is real. But we also need a large volume size so the user can evolve in this space. After multiple tests, we found that the best compromise was to choose a resolution of 700 with a volume size of 5m. Figure~\ref{fig:totalvol} shows the aproximate maximum area that can be mapped using these parameters.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[scale=0.3]{TotalVol.png}
+  \caption{\label{fig:totalvol} Approximate volume that can be mapped with parameters Volume size = 5m and Resolution = 700}
+\end{figure}
 
 \subsection{Lens deformation}
 \label{subsec:deformation}
@@ -464,10 +475,22 @@ As said in subsection~\ref{subsec:lensdef}, we need to apply a barrel distortion
 \subsubsection{Rendering and distorting}
 For the visualization inside the Rift, we need two renderings at two different points of view. We create two \textit{virtual cameras} either side of the Kinect camera. The two cameras are created from $K^{-1}$ by adding or subtracting an offset along the x-axis. Once we have the two modified matrices, we render the two scenes with the raycasting algorithm.
 
-We know need to distort the two images. The Oculus SDK doesn't provide a tool for an already rendered image.
+We know need to distort the two images. The Oculus SDK doesn't provide a tool for an already rendered image, but a model of the distorsion correction is given in \cite{OVRSDK}.
+
+We tried to implement the distorsion for already rendered images. We encountered difficulties with it: we couldn't obtain focus for the whole image. By modifying some parameters, we could achieve focus in the foreground but not in the background and vice-versa.
+
+Moreover, this method is not optimal. We have to render the two images and then warp them. These two steps could be combine into one using directly the Lens model for the ray casting.
 
 \subsubsection{Lens raycasting}
-The second method consist to raycast directly the distorted scene. The idea is to raycast using the lens model and not the camera model. This method avoid sampling problem when distorting the already rendered image. Given a pixel to render, we need to compute the corresponding direction for the raycasting. Listing~\ref{lst:lensray} shows the transformation from a pixel coordinate $uv$ to a ray.
+The second method consist to raycast directly the distorted scene. The idea is to raycast using the lens model and not the camera model. This method avoid sampling problem when distorting the already rendered image. Given a pixel to render, we need to compute the corresponding direction for the raycasting.
+
+The distortion model of the Lens transforms polar coordinates of an image $(r,\theta)$ as follows:
+$$(r,\theta)\rightarrow (f(r)r, \theta)$$
+with $f(r)$ being a \textit{scaling function} defined by
+$$f(r)=k_0+k_1r^2+k_2r^4+k_3r^6$$
+The direction $\theta$ is unchanged and the distance $r$ is expanded or contracted. In the case of the barrel distorsion, $k_0$, $k_1$, $k_2$ and $k_3$ are all positive. By choosing correctly these coefficients, the pincushion distorsion can be cancelled. $r = 0$ defines the principal point of the eye, meaning it is the direction where the pincushion distorion does not distort the image.
+
+Code~\ref{lst:lensray} shows the transformation from a pixel coordinate $uv$ to a ray.
 
 \begin{lstlisting}[language=C++, caption={C++ code for the Lens distortion}, label={lst:lensray}]
 float f = 204.4f; // focal length
@@ -490,7 +513,8 @@ float sx = i*2.0 - 1.0;
 float2 pp = make_float2(sx*(iResolution.x/4.0 - pp_adjust) + iResolution.x/2.0,
                         iResolution.y/2.0);
 
-// Distort uv for Oculus (using res independant coords)
+// Distort uv for Oculus (using resolution independant coords)
+// assuming we have the right ratio between width and height
 float2 theta = make_float2(4.0*(uv.x-pp.x)/iResolution.x,
                            4.0*(uv.y-pp.y)/iResolution.x);
 float rSq= theta.x * theta.x + theta.y * theta.y;
@@ -509,7 +533,23 @@ ray.z /= rayNorm;
 // ray is the direction for the raycasting
 \end{lstlisting}
 
-TODO: Explain the camera model
+We compute the principle point on Line 18. The principle point is not the same for the left eye or the right eye since the lenses are not exactly centered. Then from Line 23 to Line 27 we apply the distortion directly using resolution independant coordinates -- that's why we divide by \texttt{iResolution.x/4}. The parameters of the scaling function are in \texttt{K} with $k_0 = 1$, $k_1 = 0.22$, $k_2 = 0.24$ and $k_3 = 0$.
+
+Once the distortion has been computed, we compute the corresponding ray. With the focal length, the 2D coordinates uvMinusPp are taken back into the focal plan -- $z = 1$ -- giving us the direction for the raycasting. A comparison between the normal and distorted rendering is shown in Figure~\ref{fig:distortcomp}.
+
+\begin{figure}[h]
+        \centering
+        \begin{subfigure}[t]{0.6\textwidth}
+                \includegraphics[width=1\textwidth]{BefDistort.png}
+                \caption{}
+        \end{subfigure}~\\
+        \begin{subfigure}[t]{0.6\textwidth}
+                \includegraphics[width=1\textwidth]{AftDistort.png}
+                \caption{}
+        \end{subfigure}
+        \caption{\label{fig:distortcomp}Before (a) and after (b) the Lens distortion}
+        \par
+\end{figure}
 
 \subsection{Color rendering}
 In the original KinectFusion implementation, color isn't display directly on screen. It is recorded, averaged and then displayed for an offline view of the recorded model. In our implementation, we want to use color since we want the user to be fully immersed in the surrounding scene: a gray-scale world is not realistic. We use the Kinect camera and project on the scene the live color information. This techniques provides a direct feedback of the scene, before the volumetric integration is even done. The scene seems more natural to the user.
@@ -550,7 +590,7 @@ There are some issues when using live color projection. Because of the lag betwe
   \caption{\label{fig:texture} The texture is not aligned with the model}
 \end{figure}
 
-The misalignement is better seen with high resolution for the volumetric representation. However we do not think that a high resolution volumetric representation is the cause for this texture isssue. A combination of two effects is likely to explain this phenomenon:
+The misalignement is better seen with high resolution for the volumetric representation. Because a high resolution is asking for more computational power, this creates a lag between the rendered image and the projected image. However we do not think that a high resolution volumetric representation is the only cause for this texture isssue. A combination of two effects is likely to explain a part of this phenomenon:
 \begin{enumerate}
 \item The RGB camera and the depth camera are not synchronised. The Kinect creates two images: a depth image -- called the depthmap, and a RGB image. But the two images are not computed at the exact time. When our program fetches the depth image and the RGB image, these two images are not from the exact same time, thus causing a shift between the model and the image.
 \item The RGB camera is subject to the rolling shutter effect. The rolling shutter is a technique used by some cameras to take a picture. Instead of reading and writing the whole pixel array at once, the rolling shutter scans quickly horizontally or vertically the pixel array. The use of a rolling shutter creates distortion effects such as wobble and skew. These effects can affect the live projection and thus creates a misalignement with the model.
@@ -575,7 +615,7 @@ Our prototype is rudimentary. The Kinect is attached to the Rift thanks to paper
 \subsubsection{Oculus orientation and Kinect orientation}
 In order to correctly calibrate the Oculus orientation with the Kinect orientation, we have one requirement: the Kinect should be correctly aligned with the Rift when the program is launched. If the two devices are not aligned, there is no possibility to estimate the transformation between the Kinect space and the Oculus space.
 
-Given that the two devices are correctly aligned, they have the same orientation. During the first loop of the algorithm, we compute the orientation of the Kinect -- more precisely the Rotation matrix $R_i$ -- and the orientation of the Oculus thanks to the gyroscope, magnetometer and accelerometer. The computation of the transformation between the two rotation matrices is done easily: the transformation is a rotation made of the rotation matrix $R_i$ multiply by the inverse of the rotation matrix of the Oculus Rift. The inverse of a rotation matrix is easy to compute since it is only the transpose of the rotation matrix. Listing~\ref{lst:calibration} shows the code for the calibration.
+Given that the two devices are correctly aligned, they have the same orientation. During the first loop of the algorithm, we compute the orientation of the Kinect -- more precisely the Rotation matrix $R_i$ -- and the orientation of the Oculus thanks to the gyroscope, magnetometer and accelerometer. The computation of the transformation between the two rotation matrices is done easily: the transformation is a rotation made of the rotation matrix $R_i$ multiply by the inverse of the rotation matrix of the Oculus Rift. The inverse of a rotation matrix is easy to compute since it is only the transpose of the rotation matrix. Code~\ref{lst:calibration} shows the code for the calibration.
 
 \begin{lstlisting}[language=C++, caption={C++ code for finding the transformation between the Kinect and the Rift}, label={lst:calibration}]
 Mat3 rotHMDtoKINECT;
@@ -587,7 +627,7 @@ Mat3 transHmdRot = transpose(hmdRot);
 rotHMDtoKINECT = multiply(transHmdRot,kinectRot);
 \end{lstlisting}
 
-The rotation matrix of the Rift is compute from the Euler angles. The Oculus SDK has a function capable of returning the yaw, pitch and roll angles -- respectively the angle along the $y$-axis, the $x$-axis and the $z$-axis. Listing~\ref{lst:euler} shows the computation of the rotation matrix of the Oculus Rift.
+The rotation matrix of the Rift is compute from the Euler angles. The Oculus SDK has a function capable of returning the yaw, pitch and roll angles -- respectively the angle along the $y$-axis, the $x$-axis and the $z$-axis. Code~\ref{lst:euler} shows the computation of the rotation matrix of the Oculus Rift.
 
 \begin{lstlisting}[language=C++, caption={C++ code for computing the rotation matrix of the Rift}, label={lst:euler}]
 void viewMatrixUpdate(Matrix4 & ovrPose, float yYaw, float zEyeRoll, float xEyePitch){
@@ -617,7 +657,7 @@ So the rigid transform matrix we use for the rendering is $[R_{RtoK}\times hmdRo
 
 Because of the size of our prototype, the Kinect position is approximately 20cm in front of the eyes of the user. Since the Kinect position is closer to the scene than the head position, users have a hard time trying to grab objects without multiple tries.
 
-We adjust the position with the code presented in Listing~\ref{lst:position}.
+We adjust the position with the code presented in Code~\ref{lst:position}.
 
 \begin{lstlisting}[language=C++, caption={C++ code for adjusting the position of the user}, label={lst:position}]
 float3 viewDirection = make_float3(0,0,-0.15f);
@@ -730,13 +770,44 @@ The Magical pen gives good results. Figures~\ref{fig:pen1} and~\ref{fig:pen2} sh
   \includegraphics[scale=0.3]{pen2.png}
   \caption{\label{fig:pen2} Drawing in augmented reality}
 \end{figure}
-However, 
 
-~~~
+However, there are still some issues with the magical pen. Figure~\ref{fig:nowrite} shows a case where the pen is correctly tracked and the Kinect computes a valid depth whereas there is no writing on the surface.
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.4]{NoWrite.png}
+  \caption{\label{fig:nowrite} The pen is tracked but there is no writing on the surface}
+\end{figure}
+
+We noted that this issue mostly occurs when the pen is on the edges of the Kinect depthmap. When the pen resides at the center of the Kinect depthmap, the drawing is working fine. One explanation is that the depth returned by the Kinect doesn't match the actual distance between the Kinect and the pen. The distance returned by the Kinect appears to be shorter than the actual distance between the Kinect and the pen.
+
+We verified our assumption by reproducing the issue and then placing a box in front of the pen position. Because the depth return by the Kinect was shorter, the pen wrote on the box even if it wasn't there. Indeed we note that the box has drawings on it, verifying the fact that the Kinect return a shorter depth when the pen is on the edge of the depthmap. Figure~\ref{fig:penissue} illustrates the proof.
+
+\begin{figure}[h]
+  \centering
+  \begin{subfigure}[t]{0.5\textwidth}
+    \includegraphics[width=1\textwidth]{PenIssue1.png}
+    \caption{}
+  \end{subfigure}~
+  \begin{subfigure}[t]{0.5\textwidth}
+    \includegraphics[width=1\textwidth]{PenIssue2.png}
+    \caption{}
+    \end{subfigure}
+  \caption{\label{fig:penissue}In (a), the top of the pen is not colored in blue whereas it is currently being tracked. In (b) we placed a box in front of this pen position: drawing appears on the box, confirming the position recorded by the Kinect is shorter than the actual distance.}
+  \par
+\end{figure}
+
+The tracking is quite robust since we are using the HSV space. The tracking can be lost if the pen is put under a bright light or a reflection -- we failed at computing the correct hue and saturation because we are too close to a white color.
 \newpage
 \section{Results}
 \subsection{3D rendering}
 \subsection{Magic pen}
+
+\newpage
+\section{Future work}
+\subsection{Hand-tracking}
+\subsection{Augmented reality applications}
+\subsection{Hardware evolution}
 
 \newpage
 \section*{Conclusion}
