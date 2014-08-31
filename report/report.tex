@@ -555,6 +555,7 @@ Once the distortion has been computed, we compute the corresponding ray. With th
 In the original KinectFusion implementation, color isn't display directly on screen. It is recorded, averaged and then displayed for an offline view of the recorded model. In our implementation, we want to use color since we want the user to be fully immersed in the surrounding scene: a gray-scale world is not realistic. We use the Kinect camera and project on the scene the live color information. This techniques provides a direct feedback of the scene, before the volumetric integration is even done. The scene seems more natural to the user.
 
 \subsubsection{Live color projection}
+\label{subsubsec:colorprojection}
 Once we raycasted a pixel, we want to find the corresponding pixel on the Kinect RGB image. We convert the 3D point back to non-global coordinates and then back to camera coordinates as follow:
 $$u = KT_{i}^{-1}[x, y, z, 1]$$
 $$p = [u.x/u.z, u.y/u.z]$$
@@ -798,6 +799,7 @@ We verified our assumption by reproducing the issue and then placing a box in fr
 \end{figure}
 
 The tracking is quite robust since we are using the HSV space. The tracking can be lost if the pen is put under a bright light or a reflection -- we failed at computing the correct hue and saturation because we are too close to a white color.
+
 \newpage
 \section{Results}
 \subsection{3D rendering}
@@ -805,9 +807,39 @@ The tracking is quite robust since we are using the HSV space. The tracking can 
 
 \newpage
 \section{Future work}
+Our prototype is working correctly, but it is still limited. In this part, we discuss the features that we would add if we had more time to develop them.
+\subsection{Color rendering}
+One of the major issue of our prototype is that not all the field of view of the user is in color. As we said in~\ref{subsubsec:colorprojection}, the color projection covers roughly 60\% of the user field of view. To reinforce the immersion, we need to take care of the last 40\%.
+
+Multiple solutions can be considered. The first one would be to use another camera to capture the color in front of the user. A fish-eye camera could record the whole scene in front of the Rift. This would allow us to use live color projection for the entire view rendered for the user. This solution has numerous challenges. The first one is that we need a small fish-eye camera. The Kinect+Rift association is quite heavy as it is, so we have to keep the camera small. We also have to be able to find a correspondance between the rendered scene and the color frame taken by the camera. This implies that the camera has to be firmly attached to the Rift or the Kinect, so that its orientation is always known. The last task is to find the correspondance between the camera image and the rendered scene. Using a wide-angle webcam, we could be able to achieve a larger live color projection.
+
+If we can't use another RGB camera, an alternative solution is to record the color in each voxel of the volumetric representation. When the Kinect first sees a voxel of the volumetric representation, we also record the average color of the voxel. Then if the voxel is out of the field of view of the RGB camera, we use this average color instead of rendering in shade of gray. This solution is simple to implement but can be memory expensive depending on the resolution of the volumetric representation. We need to store 3 values in each voxel, in other words we multiply by 2.5 the space required by the actual representation.
+
+The main advantage of this last solution is that we are sure the whole scene is rendered in color. Using a good resolution, the result would be convincing. But it also comes with a major drawback: the camera takes the last known color as the color of the voxel. If an object comes in front of the camera, its color is assigned to the background since the volumetric integration takes some time to process. So a wrong color could be assigned to a voxel and creates oddities in the full colored redenred view. We can counter this effect by weighting the color just like we weight the depth for the volumetric integration. Using a weight would slow the color change so if the object doesn't stay in front of the surface too long, it won't have an effect on the registred color. For example, if a hand moves in front of the scene, the color wouldn't change right away.
+
 \subsection{Hand-tracking}
+Another useful capability would be a hand-tracking module. Right know it is almost impossible to track correctly the hands with the Kinect sensor: the hands are to close to the Kinect so we can't record the depth. Tracking the hands is interesting becomes it means the user can easily and naturally interact with the real world and the virtual world around him. It is a step forward for the augmented reality side of our project.
+
+Using the RGB camera, we can tracked the hands in 2D. \cite{Hand2D} proposes a method using Bayesian filtering and edge detection. This method can give us a pose estimation of the hand, but not the global 3D position of the hand. We could infer the approximate 3D position from the size of the hands or the length of the arms.
+
+For tracking the hands in 3D, we need a new sensor. The company Leap Motion created a device -- the Leap -- capable of tracking hands and fingers from the user. Recently, the company demonstrated a combination of the Rift with the Leap: the Leap was able to track hands movements and the hands and arms of the user were displayed inside the Rift. However, the technology of the Leap is similar to the Kinect: infrared LEDs project an IR pattern and an IR camera reads this pattern to understand how the fingers and the hands are positionned. Since the two devices are working with the same spectrum, interferences are possible. The best sensor would be a device combining a short and long range. This could be achieved by bringing closer the IR projector and the IR camera. It is possible that the sensor used by the Project Tango tablet is capable of both short and long range scanning, but no official information are available about the range.
+
+Another solution is to use a stereo camera to retrieve 3D information. \cite{HandStereo} provides a method using stereo cameras to compute the pose estimation of multiple hands and the global position of the hands. Using a small-spaced stereo camera, we could retrieve the 3D information in the close range of the Rift without creating interference with the Kinect sensor.
+
+\subsection{Understanding the scene}
+Another development would be to understand the scene around the user. Understanding the scene will help for more advanced applications with the Rift.
+
 \subsection{Augmented reality applications}
+Possible applications
+
+\subsubsection{Games}
+Build the map
+\subsubsection{Professional applications}
+GPS
+Surgery
+
 \subsection{Hardware evolution}
+
 
 \newpage
 \section*{Conclusion}
