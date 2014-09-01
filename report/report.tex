@@ -835,6 +835,8 @@ Once we acquired the up direction, we can look for features in the scene. The si
 
 It is even possible to recognize objects and so perform object segmentation. \cite{PCLSeg, SegmetationMotion} provides method for interpreting the captured scene. \cite{SLAMObject} even fuses SLAM with object recognition. This allows a better rendering of the scene while bettering the tracking of KinectFusion.
 
+Semantics could be very useful for augmented reality applications. Understanding the world around us is one step before interacting with it.
+
 \subsection{Augmented reality applications}
 The magical pen is a nice but yet very simple augmented reality application. There are endless ways to interact with the 3D model we capture. We distinguish two types of applications for the Rift+Kinect devices: entertainment applications -- such as the one in your smartphone -- and professional applications.
 
@@ -842,16 +844,19 @@ The magical pen is a nice but yet very simple augmented reality application. The
 The Rift was originally design for video games and a better immersion in a video game world. With the added Kinect, we can create lots of games.
 
 \paragraph{Building your own map}~\\
-With our prototype, we can create all kind of maps in real life. You can play in your living room, in the street, in the subway: there are endless maps to explore. You can set a starting point and a finish point and tried to finish the map the fastest way. You can create a new arena for a fighting game, a race track for a racing game. There are numerous possibilities.
+With our prototype, we can create all kind of maps in real life. You can play in your living room, in the street, in the subway: there are endless maps to explore. You can set a starting point and a finish point and tried to finish the map the fastest way. You can create a new arena for a fighting game, a race track for a racing game. Once again, possibilities are countless.
 
 \paragraph{Interacting with the model}~\\
-Since we have recorded the model, it is possible to interact with it. We can create a lightsaber application where the user can cut through a surface
+Since we have recorded the model, it is possible to interact with it. We can create a lightsaber application where the user can cut through a surface. This would be done by modifying the volumetric representation directly. The tracking of the lightsaber can be achieved with handtracking or a specific controller such as the Razer Hydra or a Wiimote.
 
 \subsubsection{Professional applications}
-\paragraph{GPS guide}
-\paragraph{Surgery}
-GPS
-Surgery
+\paragraph{GPS guidance}~\\
+One useful application would be a GPS integrated in your field of view. Using semantics, we could segment the world and identified the road in your field of view. Then using your GPS position and the path to follow, we could highlight directly that path on your field of view. You won't need to look at your GPS in your car because the road to follow is superimposed on your field of view.
+
+This application would be useful for everyday life purpose. Moreover, the Kinect helps to estimate your position. Given your approximate position thanks to the network coverage and the point cloud captured by the Kinect, it is possible with a large database to precisely locate you on a map. This could be particularly interesting in places where GPS is not working, for example indoors.
+
+\paragraph{Medical assistant}~\\
+The medical field could be a great source of professional applications. During a surgery, a software could segment the 3D model and identify organs. It would be then possible to highlight them for the surgeon. It will also be possible to display some information on the Rift, similar to a Head Up Display found in the video games.
 
 \subsection{Hardware evolution}
 
