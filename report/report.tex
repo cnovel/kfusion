@@ -827,14 +827,29 @@ For tracking the hands in 3D, we need a new sensor. The company Leap Motion crea
 Another solution is to use a stereo camera to retrieve 3D information. \cite{HandStereo} provides a method using stereo cameras to compute the pose estimation of multiple hands and the global position of the hands. Using a small-spaced stereo camera, we could retrieve the 3D information in the close range of the Rift without creating interference with the Kinect sensor.
 
 \subsection{Understanding the scene}
-Another development would be to understand the scene around the user. Understanding the scene will help for more advanced applications with the Rift.
+Another development would be to understand the scene around the user. Understanding the scene will help for more advanced applications with the Rift. This field is known as semantics.
+
+Currently, we don't know the real orientation of the 3D model we are capturing: we don't know the up direction. To detect the up direction, we can use the accelerometer from the Rift.
+
+Once we acquired the up direction, we can look for features in the scene. The simplest features to look for are planes. With plane detection, we can identified the floor, the ceiling, walls, tables and so on.
+
+It is even possible to recognize objects and so perform object segmentation. \cite{PCLSeg, SegmetationMotion} provides method for interpreting the captured scene. \cite{SLAMObject} even fuses SLAM with object recognition. This allows a better rendering of the scene while bettering the tracking of KinectFusion.
 
 \subsection{Augmented reality applications}
-Possible applications
+The magical pen is a nice but yet very simple augmented reality application. There are endless ways to interact with the 3D model we capture. We distinguish two types of applications for the Rift+Kinect devices: entertainment applications -- such as the one in your smartphone -- and professional applications.
 
-\subsubsection{Games}
-Build the map
+\subsubsection{Entertainment applications}
+The Rift was originally design for video games and a better immersion in a video game world. With the added Kinect, we can create lots of games.
+
+\paragraph{Building your own map}~\\
+With our prototype, we can create all kind of maps in real life. You can play in your living room, in the street, in the subway: there are endless maps to explore. You can set a starting point and a finish point and tried to finish the map the fastest way. You can create a new arena for a fighting game, a race track for a racing game. There are numerous possibilities.
+
+\paragraph{Interacting with the model}~\\
+Since we have recorded the model, it is possible to interact with it. We can create a lightsaber application where the user can cut through a surface
+
 \subsubsection{Professional applications}
+\paragraph{GPS guide}
+\paragraph{Surgery}
 GPS
 Surgery
 
