@@ -1,8 +1,5 @@
-\documentclass[12pt]{article}
-
-\usepackage{geometry}
-\geometry{a4paper}
-\geometry{margin=2.5cm,top=2cm,bottom=2cm}
+\documentclass[12pt, twoside]{article}
+\usepackage[left=2.5cm,right=2cm,top=2cm,bottom=2cm]{geometry}
 
 \usepackage{lastpage}
 \usepackage{fancyhdr}
@@ -29,11 +26,14 @@
 \usepackage{url}
 \usepackage{caption}
 \usepackage{subcaption}
-%\usepackage{hyperref}
+\usepackage{hyperref}
 \usepackage[noend]{algpseudocode}
 \usepackage{listings}
-\usepackage{xcolor} % for setting colors
+\usepackage[usenames,dvipsnames,svgnames,table]{xcolor} % for setting colors
 \usepackage{courier}
+
+\let\oldsection\section
+\def\section{\cleardoublepage\oldsection}
 
 \renewcommand*\lstlistingname{Code}
 % set the default code style
@@ -48,6 +48,13 @@
     basicstyle=\footnotesize\ttfamily
 }
 
+\hypersetup{
+  colorlinks=true,
+  citecolor=black,
+  urlcolor=Cerulean,
+  linkcolor=PineGreen,
+}
+
 \title{OFusion\\
 \large{CO542 Individual Project}}
 
@@ -56,15 +63,60 @@
 \date{\today}
 
 \begin{document}
-\maketitle
+
+\begin{titlepage}
+\begin{center}
+\includegraphics[width=0.15\textwidth]{logo.jpeg}~\\[1cm]
+
+\textsc{\LARGE Imperial College of London}\\[0.5cm]
+
+\textsc{\Large Department of Computing}\\[1.5cm]
+
+% Title
+\rule{\textwidth}{.4pt}
+{ \huge \bfseries Kinect and Oculus Rift: a new kind of augmented reality device \\[0.4cm] }
+
+\rule{\textwidth}{.4pt}\\[1.5cm]
+
+% Author and supervisor
+\begin{minipage}{0.4\textwidth}
+\begin{flushleft} \large
+\emph{Author:}\\
+Cyril \textsc{Novel}
+\end{flushleft}
+\end{minipage}
+\begin{minipage}{0.4\textwidth}
+\begin{flushright} \large
+\emph{Supervisor:} \\
+Prof. Andrew \textsc{Davison}
+\end{flushright}
+\end{minipage}
+
+\vfill
+{Submitted in partial fulfilment of the requirements for the MSc Degree in Computing Specialism -- Visual Information Processing -- of Imperial College London}\\[0.4cm]
+{\large \today}
+\end{center}
+\end{titlepage}
+
+\newpage
+\begin{abstract}
+\addcontentsline{toc}{section}{Abstract}
+The Oculus Rift is a device capable of displaying 3D information on the whole field of view of the user. The Kinect is a RGBD camera, capable of computing a depthmap of the scene it is looking at. In this project, we propose to combine the Oculus Rift and the Kinect to create a new kind of augmented reality device. With the algorithm KinectFusion, we are capable of computing a 3D representation of the surrounding scene and display it into the Rift for the user. To reinforce the immersion, we introduce live color projection on the scene. The Rift and the Kinect are correctly calibrated to provide the best experience
+
+We also present an augmented reality application called \textit{magical pen} where the user can freely draw on a surface.
+\end{abstract}~\\[5cm]
+
+\section*{Acknowledgements}
+\addcontentsline{toc}{section}{Acknowledgements}
+I would like to thank Professor Andrew Davison for his help and indications throughout this project. Thank you to Steven Lovegrove, who helped me on the crucial point of Lens distortion for Rift rendering.
 \newpage
 
 \tableofcontents
 
 \newpage
 
-\addcontentsline{toc}{section}{Introduction}
 \section*{Introduction}
+\addcontentsline{toc}{section}{Introduction}
 Augmented reality is a dynamic field in Computer Science and Computer Vision, with the multiplication of portable devices with high perfomance CPU and GPU. Multiples devices are providing an augmented reality experience. The Nintendo 3DS has a dedicated game with augmented reality cards, applications can be downloaded on smartphones. The Google Glass works like a small Head Up Display for the user, similar to what can be seen in some videogames. The Project Tango phone and tablet comes with built-in augmented reality applications. However, none of these devices are capable of displaying information for the entire field of view of the user. The smartphone or tablet size is small compared to the size of the field of view. The Google Glass encounters the same problem: there is no possible overlay of the reality.
 
 By using a virtual reality headset, such as the Oculus Rift, we cover the entire field of view of the user. Using an appropriate sensor, we can understand the scene surrounding the user. Then we can overlay information on the reality for the whole field of view. This creates a new kind of augmented reality device. Applications are infinite: the road to follow can be directly highlighted in a GPS application; you can play a virtual game in your living room with the game understanding the geometry of your living room -- making each game unique since you can move objects; a medical application can highlight organs during an operation and also provide an HUD with useful information. Possibilities are countless.
@@ -400,7 +452,6 @@ To avoid this distortion, we must post-processed the 3D rendered views. We apply
                 \label{fig:bardist}
         \end{subfigure}
         \caption{Distortion of the lenses}
-        \par
 \end{figure}
 
 The lenses cause also chromatic aberrations on the edges of the field of view.
@@ -437,7 +488,7 @@ Figures~\ref{fig:highres} and~\ref{fig:lowres} shows the difference between a hi
                 \label{fig:lowres}
         \end{subfigure}
         \caption{Resolution parameter}
-        \par
+        
 \end{figure}
 
 Figures~\ref{fig:largevol} and~\ref{fig:smallvol} shows the difference between a large volume parameter and a small volume parameter for the same volume size.
@@ -455,7 +506,7 @@ Figures~\ref{fig:largevol} and~\ref{fig:smallvol} shows the difference between a
                 \label{fig:smallvol}
         \end{subfigure}
         \caption{Volume size parameter}
-        \par
+        
 \end{figure}
 
 Clearly, a high resolution gives better looking result. However the higher the resolution, the more memory and computing power we ask from the GPU.
@@ -491,6 +542,7 @@ $$f(r)=k_0+k_1r^2+k_2r^4+k_3r^6$$
 The direction $\theta$ is unchanged and the distance $r$ is expanded or contracted. In the case of the barrel distorsion, $k_0$, $k_1$, $k_2$ and $k_3$ are all positive. By choosing correctly these coefficients, the pincushion distorsion can be cancelled. $r = 0$ defines the principal point of the eye, meaning it is the direction where the pincushion distorion does not distort the image.
 
 Code~\ref{lst:lensray} shows the transformation from a pixel coordinate $uv$ to a ray.
+\clearpage
 
 \begin{lstlisting}[language=C++, caption={C++ code for the Lens distortion}, label={lst:lensray}]
 float f = 204.4f; // focal length
@@ -548,7 +600,7 @@ Once the distortion has been computed, we compute the corresponding ray. With th
                 \caption{}
         \end{subfigure}
         \caption{\label{fig:distortcomp}Before (a) and after (b) the Lens distortion}
-        \par
+        
 \end{figure}
 
 \subsection{Color rendering}
@@ -795,7 +847,7 @@ We verified our assumption by reproducing the issue and then placing a box in fr
     \caption{}
     \end{subfigure}
   \caption{\label{fig:penissue}In (a), the top of the pen is not colored in blue whereas it is currently being tracked. In (b) we placed a box in front of this pen position: drawing appears on the box, confirming the position recorded by the Kinect is shorter than the actual distance.}
-  \par
+  
 \end{figure}
 
 The tracking is quite robust since we are using the HSV space. The tracking can be lost if the pen is put under a bright light or a reflection -- we failed at computing the correct hue and saturation because we are too close to a white color.
@@ -879,7 +931,7 @@ The drawing accomodates very well with changes in the orientation. Figure~\ref{f
     \caption{}
     \end{subfigure}
   \caption{\label{fig:orientation} The same drawing is viewed at different orientations. As long as the Kinect tracking is effective, the drawing stays in place.}
-  \par
+  
 \end{figure}
 
 \newpage
@@ -980,6 +1032,7 @@ With a higher screen resolution compared to the first development kit, we need t
 \newpage
 \section*{Conclusion}
 \addcontentsline{toc}{section}{Conclusion}
+
 
 \newpage
 \addcontentsline{toc}{section}{References}
