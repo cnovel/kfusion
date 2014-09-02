@@ -802,8 +802,85 @@ The tracking is quite robust since we are using the HSV space. The tracking can 
 
 \newpage
 \section{Results}
+\subsection{Hardware}
+Our implementation was written in C++ and CUDA. The program was running on a computer with Ubuntu 13.04, an Intel Xeon QuadCore E5606 2.13GHz, 8GB of memory and a GPU NVidia GeForce GTX 780. We use the Kinect for Xbox 360 as depth sensor and the Oculus Rift development kit 1.
 \subsection{3D rendering}
-\subsection{Magic pen}
+The KinectFusion implementation is running smoothly on the computer at more than 30fps. With the parameter volume size set to 5 meters and the resolution to 700, this is what a whole scene can look like -- Figure~\ref{fig:totalscene}.
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.3]{WholeScene.png}
+  \caption{\label{fig:totalscene} A scene with size = 5m and resolution = 700}
+\end{figure}
+
+The reconstruction is accurate, however we can spot minor glitches due to the raycasting -- see Figure~\ref{fig:glitch1} and Figure~\ref{fig:glitch2}.
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.3]{glitch1.png}
+  \caption{\label{fig:glitch1} Raycasting glitch}
+\end{figure}
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.3]{glitch2.png}
+  \caption{\label{fig:glitch2} Raycasting glitch}
+\end{figure}
+
+These glitches appear because the TSDFs are not exact when one angle of the scene has not been scanned. So before the TSDFs are updated, the raycaster is using the old ones, causing that kind of glitches. By properly scanning all the sides of an object, the glitches don't appear.
+
+Another glitch can appear when someone is walking in the very background. Because the Kinect is not able to evaluate the actual distance with the scene once the person has leaved -- it is too far to reach for the IR pattern, the TSDF is not updated. So the recorded TSDFs is creating a glitch, shown in Figure~\ref{fig:glitch3}.
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.5]{glitch3.png}
+  \caption{\label{fig:glitch3} TSDFs are not updated because the background is too far, creating this glitch.}
+\end{figure}
+
+Even with the low resolution RGB camera, the live color reprojection is giving good results. Figure~\ref{fig:color1} is the live color projection of a pillar from the lab. The clock is easily readable and so is the information panel beneath it. Figure~\ref{fig:color2} shows that the keys on the keyboard are almost readable.
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.33]{Color1.png}
+  \caption{\label{fig:color1} It is 2:43pm and we still can't eat or drink in the lab}
+\end{figure}
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.3]{Color2.png}
+  \caption{\label{fig:color2} The keys on the keyboard are almost readable}
+\end{figure}
+
+Set apart the texture issue we already talk about, there is no noteworthy trouble with the live color projection.
+
+\subsection{Magical pen}
+The Magical pen is a great feature and it is has nearly no impact on the framerate of our program. We use a grid of $1000\times 1000\times 1000$ voxels, so a voxel has a side of 5mm. Figure~\ref{fig:hashtag} shows a writing on a table of the Computing Lab.
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.6]{hashtag.png}
+  \caption{\label{fig:hashtag} Augmented reality drawing on a table}
+\end{figure}
+
+The drawing accomodates very well with changes in the orientation. Figure~\ref{fig:orientation} shows the same drawing under different orientations.
+
+\begin{figure}[h]
+  \centering
+  \begin{subfigure}[t]{0.5\textwidth}
+    \includegraphics[width=1\textwidth]{Orientation1.png}
+    \caption{}
+  \end{subfigure}~
+  \begin{subfigure}[t]{0.5\textwidth}
+    \includegraphics[width=1\textwidth]{Orientation2.png}
+    \caption{}
+    \end{subfigure}~\\
+  \begin{subfigure}[t]{0.5\textwidth}
+    \includegraphics[width=1\textwidth]{Orientation3.png}
+    \caption{}
+    \end{subfigure}
+  \caption{\label{fig:orientation} The same drawing is viewed at different orientations. As long as the Kinect tracking is effective, the drawing stays in place.}
+  \par
+\end{figure}
 
 \newpage
 \section{Future work}
@@ -858,8 +935,47 @@ This application would be useful for everyday life purpose. Moreover, the Kinect
 \paragraph{Medical assistant}~\\
 The medical field could be a great source of professional applications. During a surgery, a software could segment the 3D model and identify organs. It would be then possible to highlight them for the surgeon. It will also be possible to display some information on the Rift, similar to a Head Up Display found in the video games.
 
-\subsection{Hardware evolution}
+\paragraph{Industrial Head Up Display}~\\
+Another possibility is to use the Oculus Rift as an industrial HUD. For example, a mechanic could visualize in 3D the whole organization of a car when he is looking at it. We could highlight different parts of the car, such as the gear box, the motor, the brakes and so on. Moreover, the Kinect could be use to assess the quality of a part. If a part has not the same 3D model as the reference part, it is likely to be defective. The Kinect could be use to identify defective parts.
 
+Instructions could be displayed directly in the field of view of workers. That way they won't have to look at a manual.
+
+\subsection{Hardware evolution}
+Our current prototype is heavy and not very discrete. The original Kinect sensor is very large and thus impractical for an everyday usage. Moreover, the resolution of the screen of the Oculus Rift Development Kit 1 is poor. The screen-door effect -- shown in Figure~\ref{fig:sdeffect} -- is predominant and prevent a good immersion in the world.
+\subsubsection{Sensors}
+As we said, the Kinect sensor is too big for an everyday usage. Since its release in 2010, progress has been made for reducing the size of the sensors. The Project Tango devices, developed by Google, feature the same technology: the combination of an IR projector projecting a pattern on the scene and an IR camera reading this pattern and deducing the depthmap.
+
+The size of the combined sensor is terribly smaller than the Kinect one. Figure~\ref{fig:tangophone} shows the back of the Project Tango Phone with the IR projector and the IR camera highlighted while Figure~\ref{fig:tangotablet} shows the back of the Project Tango Tablet.
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.1]{TangoPhone.jpeg}
+  \caption{\label{fig:tangophone} Project Tango Phone: IR camera on the left, IR projector on the right}
+\end{figure}
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.27]{TangoTab.jpeg}
+  \caption{\label{fig:tangotablet} Project Tango Tablet: IR camera on the left, IR projector on the right}
+\end{figure}
+
+We can see that the sensors are now very small and yet provides -- according to Google -- the same capabilities as the Kinect sensor. This integration of the sensors shows that our prototype could be greatly improved by using this new components.
+
+\subsubsection{Screen resolution}
+The Oculus Development team is well aware of the screen door effect and the new development kit addresses these concerns. The new Rift has a resolution of $1920\times 1080$ with a pixel density of 386ppi, whereas the first development kit had a screen resolution of $1280\times 800$ with a pixel density of 216ppi. The consummer version is expected to have a greater pixel density than the second development kit. The rising pixel density will counter the screen-door effect and allow a better representation of the surrounding scene.
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.1]{Screen-door_effect.jpg}
+  \caption{\label{fig:sdeffect} The screen-door effect}
+\end{figure}
+
+But in the same time, a higher screen resolution means a higher number of raycasting operations for rendering the scene. This means we need more computational power for such a scene.
+
+\subsubsection{Computational ressources}
+For our implementation, we use a GTX 780 GPU with 2304 CUDA cores. If we want to have a portable prototype, the best mobile GPU is the GTX 880M which have 1536 CUDA cores. Currently, the Project Tango uses a Tegra K1 with 192 CUDA cores. The Tegra K1 might be not powerful enough to run our implementation in real-time.
+
+With a higher screen resolution compared to the first development kit, we need to raycast more pixels and thus we need a good GPU. While it should not be a problem for a desktop prototype like the one we built, it seems difficult to achieve a real-time headtracking, mapping and raycasting with only a Tegra K1.
 
 \newpage
 \section*{Conclusion}
