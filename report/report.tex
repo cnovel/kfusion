@@ -100,11 +100,11 @@ Prof. Andrew \textsc{Davison}
 
 \newpage
 \begin{abstract}
-\addcontentsline{toc}{section}{Abstract}
-The Oculus Rift is a device capable of displaying 3D information on the whole field of view of the user. The Kinect is a RGBD camera, capable of computing a depthmap of the scene it is looking at. In this project, we propose to combine the Oculus Rift and the Kinect to create a new kind of augmented reality device. With the algorithm KinectFusion, we are capable of computing a 3D representation of the surrounding scene and display it into the Rift for the user. To reinforce the immersion, we introduce live color projection on the scene. The Rift and the Kinect are correctly calibrated to provide the best experience
+The Oculus Rift is a device capable of displaying 3D information on the whole field of view of the user. The Kinect is a RGBD camera, capable of computing a depthmap of the scene it is looking at. In this project, we propose to combine the Oculus Rift and the Kinect to create a new kind of augmented reality device. With the algorithm KinectFusion, we are capable of computing a 3D representation of the surrounding scene and display it into the Rift for the user. To reinforce the immersion, we introduce live color projection on the scene. The Rift and the Kinect are correctly calibrated to provide the best user experience.
 
 We also present an augmented reality application called \textit{magical pen} where the user can freely draw on a surface.
 \end{abstract}~\\[5cm]
+%\addcontentsline{toc}{section}{Abstract}
 
 \section*{Acknowledgements}
 \addcontentsline{toc}{section}{Acknowledgements}
@@ -117,54 +117,57 @@ I would like to thank Professor Andrew Davison for his help and indications thro
 
 \section*{Introduction}
 \addcontentsline{toc}{section}{Introduction}
-Augmented reality is a dynamic field in Computer Science and Computer Vision, with the multiplication of portable devices with high perfomance CPU and GPU. Multiples devices are providing an augmented reality experience. The Nintendo 3DS has a dedicated game with augmented reality cards, applications can be downloaded on smartphones. The Google Glass works like a small Head Up Display for the user, similar to what can be seen in some videogames. The Project Tango phone and tablet comes with built-in augmented reality applications. However, none of these devices are capable of displaying information for the entire field of view of the user. The smartphone or tablet size is small compared to the size of the field of view. The Google Glass encounters the same problem: there is no possible overlay of the reality.
+Augmented reality is an active field in Computer Science and Computer Vision, with the multiplication of portable devices with high perfomance CPU and GPU. Multiples devices are providing an augmented reality experience. The Nintendo 3DS has a dedicated game with augmented reality cards, applications can be downloaded on smartphones. The Google Glass works like a small Head Up Display for the user, similar to what can be seen in some videogames. The Project Tango phone and tablet comes with built-in augmented reality applications. However, none of these devices are capable of displaying information for the entire field of view of the user. The smartphone or tablet size is small compared to the size of the field of view. The Google Glass encounters the same problem: there is no possible overlay of the reality.
 
 By using a virtual reality headset, such as the Oculus Rift, we cover the entire field of view of the user. Using an appropriate sensor, we can understand the scene surrounding the user. Then we can overlay information on the reality for the whole field of view. This creates a new kind of augmented reality device. Applications are infinite: the road to follow can be directly highlighted in a GPS application; you can play a virtual game in your living room with the game understanding the geometry of your living room -- making each game unique since you can move objects; a medical application can highlight organs during an operation and also provide an HUD with useful information. Possibilities are countless.
 
-During this project, we created a device fusionning an Oculus Rift and a Kinect to create a new kind of augmented reality device. The Kinect captures the surrounding scene. It is then rendered in 3D in the Oculus Rift with real-time color information. Thus the user can evolve just like in real life. An augmented reality application has been integrated. Using a \textit{magic pen}, it is possible to draw virtually on a surface.
+During this project, we created a device fusionning an Oculus Rift and a Kinect to create a new kind of augmented reality device. The Kinect captures the surrounding scene. It is then rendered in 3D in the Oculus Rift with real-time color information. Thus the user can evolve just like in real life. An augmented reality application has been integrated. Using a \textit{magical pen}, it is possible to draw virtually on a surface.
 \newpage
 
 \section{Hardware review}
 \subsection{Virtual reality headsets}
-A virtual reality headsets is a device capable of displaying 3D scenes to the user wearing the headset. It is made of screen and two lenses, with the left part of the screen showing the image for the left eye and the right eye for the right part.
+A virtual reality headset is a device capable of displaying 3D scenes to the user wearing the headset. It is made of screen and two lenses, with the left part of the screen showing the image for the left eye and the right part for the right eye.
 
 Virtual reality headsets have been fancied a long-time and are finally becoming reality. The Oculus Rift is the first affordable headset to encounter a commercial success. Previously, Nintendo tried to sell a virtual reality headset called the Virtual Boy. It was a failure since its use caused terrible headaches to the players and only 5 shades of red were available.
 
 In the following sections, we will present some virtual reality headsets and highlight their differences.
 
 \subsubsection{Oculus Rift and Sony Morpheus}
-The Oculus Rift is developped by Oculus VR \cite{Oculus}. It is the first virtual headset targetting the mass market, and therefore has an aggressive price -- the first development kit costs 300\$, 350\$ for the second one.
+The Oculus Rift is developped by Oculus VR \cite{Oculus}. It is the first virtual headset targeting the mass market, and therefore has an aggressive price -- the first development kit costs 300\$, 350\$ for the second one.
 
-The Oculus uses a screen for displaying the image. In the first development kit, the resolution of the screen was 1280x800, leading to an effective 640x800 per eye. One part of the screen displays the image for one eye, the other part displays the image for the other eye. The Rift uses lenses to distort the image on the screen, so that it fits the actual field of view of the human eye. The field of view of the Rift is 90 degrees horizontally. Figure~\ref{fig:oculusback} shows the back of the Oculus Rift.
+The Oculus uses an LCD screen for displaying the image. In the first development kit, the resolution of the screen was 1280x800, leading to an effective 640x800 per eye. One part of the screen displays the image for one eye, the other part displays the image for the other eye. The Rift uses lenses to distort the image on the screen, so that it fits the actual field of view of the human eye. The field of view of the Rift is 90 degrees horizontally. Figure~\ref{fig:oculusback} shows the back of the Oculus Rift.
 
-Gyros, accelerometers and magnetometers are combined in the helmet in order to track the user's head movements. The first development kit is however unable to detect translation movement.
+A gyroscope, an accelerometer and a magnetometer are combined in the headset in order to track the user's head movements. The first development kit is however unable to detect translation movement.
 
 \begin{figure}[h]
   \centering
   \includegraphics[scale=0.2]{OculusBack.jpg}
-  \caption{\label{fig:oculusback} The Oculus Rift}
+  \caption{\label{fig:oculusback} The Oculus Rift\protect\footnotemark}
 \end{figure}
+\footnotetext{Photo CC-BY 3.0 by Sebastian Stabinger}
 
 The major drawback of the Rift is the resolution of the screen. The screen-door effect is predominant and prevent a total immersion in the displayed scene. The second version of the Development Kit comes with a resolution of 960x1080 per eye, decreasing this effect. This next version comes also with a camera, tracking the movement of the head, in order to detect translation in addition to rotation.
 
-The success of the Oculus Rift leads other companies to develop similar devices. Sony presented few months ago the project Morpheus \cite{Morpheus} -- shown in figure~\ref{fig:morpheus}, highly similar to the Oculus Rift.
+The success of the Oculus Rift leads other companies to develop similar devices. Sony presented few months ago the project Morpheus \cite{Morpheus} -- shown in Figure~\ref{fig:morpheus}, highly similar to the Oculus Rift.
 
 \begin{figure}[h]
   \centering
-  \includegraphics[scale=0.3]{Morpheus.jpg}
-  \caption{\label{fig:morpheus} Sony Morpheus}
+  \includegraphics[scale=0.5]{Morpheus.jpg}
+  \caption{\label{fig:morpheus} Sony Morpheus\protect\footnotemark}
 \end{figure}
+\footnotetext{Photo CC-BY 2.0 by GDC Official}
 
-Sony Morpheus uses a comparable technology to Oculus Rift. The most noticable difference is that Morpheus has tracking technology all around it, whereas Oculus Rift only has tracking captors on the front and on the sides of the display.
+Sony Morpheus uses a comparable technology to the Oculus Rift. The most noticeable difference is that Morpheus has tracking technology all around it, whereas Oculus Rift only has tracking captors on the front and on the sides of the display.
 
 \subsubsection{Google Cardboard and Samsung Gear VR}
 During the Google I/O 2014, Google introduced the Cardboard Project. The idea is to use a smartphone as the screen for the headset and create the headset from a cardboard. Google presented the project as a Do-It-Yourself headset, acknowledging that the most difficult part was purchasing the lenses. The design files are available online and some online stores sell and ship the set for 25\$.
 
 \begin{figure}[h]
   \centering
-  \includegraphics[scale=0.3]{GoogleCardboard.png}
-  \caption{\label{fig:cardboard} The Google Cardboard project}
+  \includegraphics[scale=0.1]{GoogleCardboard.jpg}
+  \caption{\label{fig:cardboard} The Google Cardboard project\protect\footnotemark}
 \end{figure}
+\footnotetext{Photo BY-SA 3.0 by Runner1928}
 
 The advantage of Google Carboard is that it uses the sensors in the smartphone for the head positionning. Every recent smartphone is equiped with a gyroscope and a magnetometer, so the head tracking is easy to achieve.
 
@@ -173,13 +176,14 @@ Samsung is developping a similar headset called Gear VR. Little information are 
 The main advantage of smartphones is the high pixel density of the screen. The LG G3 offers a 538 ppi screen, when the first Oculus Rift development kit has \textit{only} a 216 ppi screen. This high density screen counters the screen door effect.
 
 \subsubsection{Vrvana Totem}
-The Totem, developed by Vrvana \cite{Vrvana}, is similar to the Oculus Rift, except that two cameras are embedded on the front of the headset -- see figure~\ref{fig:tpg}. The idea is that each camera captures the view of one eye.
+The Totem, developed by Vrvana \cite{Vrvana}, is similar to the Oculus Rift, except that two cameras are embedded on the front of the headset -- see Figure~\ref{fig:tpg}. The idea is that each camera captures the view of one eye.
 
 \begin{figure}[h]
   \centering
   \includegraphics[scale=0.3]{TruePlayerGear.jpg}
-  \caption{\label{fig:tpg} The Totem, with two cameras}
+  \caption{\label{fig:tpg} The Totem, with two cameras\protect\footnotemark}
 \end{figure}
+\footnotetext{Photo courtesy of Vrvana}
 
 The lens distorsion is computed directly via the hardware in the headset. The others characteristics are higly similar to the Oculus Rift. The Totem is very interesting thanks to these embedded cameras. We want to achieve a new type of augmented reality. The Totem directly captures what the eyes would see. This guarantees an almost perfect 3D image for the user. However, the 3D reconstruction is more difficult - as seen in section~\ref{subsec:stereocam}.
 
@@ -187,42 +191,44 @@ The lens distorsion is computed directly via the hardware in the headset. The ot
 For rendering the scene in a virtual reality headset, we need to capture the scene surrounding the user. We can not just extract features from the scene. We need dense information about the scene in real time in order to create the corresponding 3D surface. In this part we present different devices that can compute a point cloud in real time.
 
 \subsubsection{Structured light scanning}
-Structured light scanning is a technique used for computing a depth map from the projection of near IR light patterns on the scene. The device project an IR light pattern on the surface of the room. Depending on the depth of the objects, the pattern is bigger or smaller than the reference pattern. Thus we can infer a depth map by reading the projection of the IR pattern. An exemple of pattern is presented in figure~\ref{fig:kinectir}.
+Structured light scanning is a technique used for computing a depth map from the projection of near IR light patterns on the scene. The device project an IR light pattern on the surface of the room. Depending on the depth of the objects, the pattern is bigger or smaller than the reference pattern. Thus we can infer a depth map by reading the projection of the IR pattern. An exemple of pattern is presented in Figure~\ref{fig:kinectir}.
 
 \begin{figure}[h]
   \centering
   \includegraphics[scale=0.3]{Kinect-ir-image.png}
-  \caption{\label{fig:kinectir} Kinect IR pattern}
+  \caption{\label{fig:kinectir} Kinect IR pattern\protect\footnotemark}
 \end{figure}
+\footnotetext{Photo CC BY-SA 3.0 by Kolossos}
 
-This technique is used by the first Kinect -- figure~\ref{fig:kinect}. The resolution of the depth map is $320*240$ points. Other devices using this technique exist, such as the Asus Xtion or the PrimeSense Capri sensor.
+This technique is used by the first Kinect -- Figure~\ref{fig:kinect}. The resolution of the depth map is $320*240$ points. Other devices using this technique exist, such as the Asus Xtion or the PrimeSense Capri sensor.
 
 \begin{figure}[h]
   \centering
-  \includegraphics[scale=0.3]{kinect1.jpg}
+  \includegraphics[scale=0.05]{kinect1.png}
   \caption{\label{fig:kinect} First Kinect. From left to right: IR Pattern projector, IR Camera for reading the projected pattern, RGB camera}
 \end{figure}
 
-It is now possible to create very small IR light projector and IR light captor. The Capri sensor is ten times smaller than the Kinect sensor and can be easily mounted on a tablet or a virtual reality headset. Google Project Tango, a tablet with 3D sensing capabilities, is supposed to use the PrimeSense Capri sensor for capturing 3D information.
+It is now possible to create very small IR light projector and IR light captor. The Capri sensor is ten times smaller than the Kinect sensor and can be easily mounted on a tablet or a virtual reality headset.
 
-However, the use of structured light comes with drawbacks. In very luminous area, the IR light captor can't work because the incoming light is blinding it. Surfaces like TV or computer screen reflect the IR light and so no information can be retrieve from these areas. Finally, the distance between the projector and the captor creates a shadow effect around the object. Very close objects can't be processed since they aren't properly seen by the captor or the sensor. And since the light intensity decreases with the distance, remote objects can't be seen. The computed distance is sometimes wrong for large distances (more than 2 meters). The depth distribution is discrete and coarse for large distance. Beyond two meters, the depth estimation is often considered as unreliable.
+However, the use of structured light comes with drawbacks. In very luminous area, the IR light captor can't work because the incoming light is blinding it. Surfaces like TV or computer screen reflect the IR light and so no information can be retrieve from these areas. Finally, the distance between the projector and the captor creates a shadow effect around the object. Very close objects can't be processed since they aren't properly seen by the captor or the sensor. And since the light intensity decreases with the distance, remote objects can't be seen. The computed distance is sometimes wrong for large distances (more than 4 meters). The depth distribution is discrete and coarse for large distance. Beyond four meters, the depth estimation is often considered as unreliable.
 
 \subsubsection{Time of Flight}
 A Time of Flight camera is estimating the distance of a point based on the known speed of light. The camera relies on light pulse. The illumination is switched on for a very short time on one point. The light reflects on the object and is gathered by the camera. The delay between the start of the pulse and the gathering by the camera is the time taken by the light to travel twice the distance between the camera and the object. Knowing the speed of light, we can deduce the distance of the point.
 
-Kinect 2 is using a time of flight camera -- figure~\ref{fig:kinect2}. The resolution is much higher than Kinect one, since Kinect 2 produces a $512*424$ depth map. The time of flight doesn't suffer from illumination problems, position problems or distance problems. The depth distribution is not coarse in the remote areas, allowing a nice accuracy of the measurements -- see figure~\ref{fig:depthK2}.
+Kinect 2 is using a time of flight camera -- Figure~\ref{fig:kinect2}. The resolution is much higher than the first Kinect, since Kinect 2 produces a $512*424$ depth map. The time of flight doesn't suffer from illumination problems, position problems or distance problems. The depth distribution is not coarse in the remote areas, allowing a nice accuracy of the measurements -- see Figure~\ref{fig:depthK2}.
 
 \begin{figure}[h]
   \centering
-  \includegraphics[scale=0.3]{kinect2.jpg}
+  \includegraphics[scale=0.05]{kinect2.jpg}
   \caption{\label{fig:kinect2} Kinect 2}
 \end{figure}
 
 \begin{figure}[h]
   \centering
   \includegraphics[scale=0.3]{kinect2depth.jpg}
-  \caption{\label{fig:depthK2} Depth map with the time of flight camera of the Kinect 2}
+  \caption{\label{fig:depthK2} Depth map with the time of flight camera of the Kinect 2\protect\footnotemark}
 \end{figure}
+\footnotetext{From the Kinect 2 - Tech Demo footage by Microsoft}
 
 However, Time Of Flight cameras are very expensive, especially for 30Hz processing of the environment. Until recently, real-time TOF cameras had a lower resolution than the Kinect 1. Due to the nature of light reflectivity, the depth estimation is less reliable when the light ray is not perpendicular to the surface. Figure~\ref{fig:depthK2} shows a lot of noise and holes at the extremities of the depth map.
 
@@ -230,7 +236,7 @@ However, Time Of Flight cameras are very expensive, especially for 30Hz processi
 \label{subsec:stereocam}
 Stereoscopy uses two or more pictures for finding corresponding features and replace them in 3D space. Given two images of the same object from slightly different points of view, we identify the features that appear on both images. This search is easily performed with the use of Computational Stereo techniques, such as the computation of the epipolar lines. Since we know where the images have been taken relatively to each others, we can compute the depth of the feature. We perform this for every features and we retrieve a point cloud with the approximate same resolution as the images taken.
 
-The chinese company Etron is selling very small devices with two optical captors and a processor for computing the depth map. A resulting depthmap is shown in figure~\ref{fig:etron}.
+The chinese company Etron is selling very small devices with two optical captors and a processor for computing the depth map. A resulting depthmap is shown in Figure~\ref{fig:etron}.
 
 \begin{figure}[h]
   \centering
@@ -240,12 +246,12 @@ The chinese company Etron is selling very small devices with two optical captors
 
 Stereo camera system is the cheaper system for retrieving a point cloud. It only requires some calibration and computation, but it is not a very expensive hardware compared to the other two systems.
 
-The computed depth map is unfortunately very noisy. There is a lot of noise when we compute the depth map. Shadow effects can be seen on figure~\ref{fig:etron}. Moreover it is very difficult to compute a distance for uniform area, since no feature information can be retrieved. We need to extrapolate the distance based  on the surrounding information, but this leads to low fidelity reconstruction of the scene.
+The computed depth map is unfortunately very noisy. There is a lot of noise when we compute the depth map. Shadow effects can be seen on Figure~\ref{fig:etron}. Moreover it is very difficult to compute a distance for uniform area, since no feature information can be retrieved. We need to extrapolate the distance based  on the surrounding information, but this leads to low fidelity reconstruction of the scene.
 
 \subsection{Similar projects}
-The combination of the Oculus Rift with the Kinect has been achieved -- to our knowledge -- recently by some researchers.
+The combination of the Oculus Rift with the Kinect has been achieved recently by some researchers.
 
-Thomas Whelan has combined the Oculus Rift and its algorithm Kintinuous \cite{KinRift} -- an extension of KinectFusion algorithm. Kintinuous scans the surrounding scene and computes offline the geometry and the colors of the scene. Then the user puts on the Oculus Rift and the Kinect is set in front of the Rift. The Kinect acts here as the position tracker of the Rift. No live colors are displayed and the user doesn't have any feedback from is body. Because there is not body awareness and no live feedback when the user is moving an object, the experience can be quite disturbing.
+Thomas Whelan has combined the Oculus Rift and its algorithm Kintinuous \cite{KinRift} -- an extension of KinectFusion algorithm. Kintinuous scans the surrounding scene and computes offline the geometry and the colors of the scene. Then the user puts on the Oculus Rift and the Kinect is set in front of the Rift. The Kinect acts here as the position tracker of the Rift. No live colors are displayed and the user doesn't have any feedback from his body. Because there is no body awareness and no live feedback when the user is moving an object, the experience can be quite disturbing.
 
 Steven Lovegrove has combined the Oculus Rift and KinectFusion \cite{OculusFusion}. This prototype is close to what we are doing in this project. The Kinect simultaneously captures the scene and track the position of the Rift. However, there is no color in this implementation.
 
@@ -261,8 +267,8 @@ For the reconstruction of the scene and the localization of the user, we use the
 \begin{enumerate}
 \item \textbf{Depth Map conversion} The live depth map is converted into absolute 3D positions and normals in the camera coordinate space;
 \item \textbf{Camera tracking} We keep a rigid 6 degrees of freedom transform of the camera. At time $i$, the camera pose is noted $T_i = [R_i|t_i]$ with $R_i$ being a 3x3 rotation matrix and $t_i$ being a 3D translation vector. We use the Iterative Closest Point algorithm for tracking the position and orientation of the camera.
-\item \textbf{Volumetric integration}
-\item \textbf{Raycasting} The volume is raycast to render the implicit surface.
+\item \textbf{Volumetric integration} We use a voxel 3D grid to store Truncated Signed Distance Functions that represents the distance to the scene surface.
+\item \textbf{Raycasting} The volume is raycasted to render the implicit surface.
 \end{enumerate}
 
 Each of this stage is performed in parallel on the GPU using CUDA.
@@ -270,11 +276,11 @@ Each of this stage is performed in parallel on the GPU using CUDA.
 \subsubsection{Depth Map conversion}
 The depth map is a 2D array of float. At time $i$, for each pixel $u(x,y)$ we have the corresponding depth $D_i(u)$. The camera matrix is a $4\times 3$ matrix that links a 3D world point to a 2D image point. We are working with homogeneous coordinates, meaning a 2D vector is represented by 3 coordinates and a 3D vector is represented by 4 coordinates. The homogeneous representation makes it easier to compute translation via matrix multiplications.
 
-Given the calibration matrix $K$ of the Kinect infrared camera, we can compute the 3D position in the camera coordinate space. For each pixel $u$, a GPU thread compute the 3D position as follow:
+Given the camera matrix $K$ of the Kinect infrared camera, we can compute the 3D position in the camera coordinate space. For each pixel $u$, a GPU thread computes the 3D position as follow:
 $$v_i(u) = D_i(u)K^{-1}[u,1]$$
 $[u,1]$ are the homogeneous coordinates of the pixel. $K^{-1}[u,1]$ gives us corresponding 3D point at distance 1 from the camera. The results are saved in a single vertex map $V_i$.
 
-We also compute the corresponding normal map, as it will be useful later for the ICP algorithm. Each normal $n_i(u)$ is computed by a GPU thread using the neighboring reprojected points:
+We also compute the corresponding normal map, as it will be useful later for the ICP algorithm. Each normal $n_i(u)$ is computed by a GPU thread using the neighboring reprojected points formula:
 $$n_i(u) = (v_i(x+1,y) - v_i(u))\times (v_i(x,y+1) - v_i(u))$$
 The normal is then normalized and stored in a single normal map $N_i$.
 
@@ -285,7 +291,7 @@ $$n_i^g(u) = R_in_i(u)$$
 \subsubsection{Camera tracking}
 Iterative Closest Point algorithm was introduced by \cite{ICP1}. It is a widely studied algorithm for 3D shapes alignement. \cite{ICP2} provides a detailed study of the ICP algorithm. In KinectFusion, ICP is also used for tracking the camera pose of the Kinect, that means its position and its orientation. For each new depth frame captured by the Kinect, the algorithm estimates the 6DOF transform that aligns the vertices and normals of the current frame with those of the previous frame. This gives a relative 6DOF transform. If we apply them together incrementally, we obtain the global camera pose $T_i$.
 
-The first part of the ICP is to find correspondences between the current oriented points set at time $i$ with the previous one at time $i-1$. KinectFusion uses \textit{projective data association}. Given the previous global rigid body transform $T_{i-1}$, each GPU thread project a point $v_{i-1}$ into camera coordinate space. It then looks up the corresponding point in $V_i$ and in $N_i$ (respectfully the current vertex map and the current normal map). Doing so, we find the corresponding points along the same ray. Next, each thread tests the corresponding points to reject outliers. We compute the euclidean distance between the two global positions and angle between the two corresponding normals. If both of them are within a threshold, the correspondence is validated. A pseudo-code of the algorithm is described in Algorithm~\ref{algo1}. $T_i$ is initialized at $T_{i-1}$ and is updated with an incremental transform at the end of each step of the ICP.
+The first part of the ICP is to find correspondences between the current oriented points set at time $i$ with the previous one at time $i-1$. KinectFusion uses \textit{projective data association}. Given the previous global rigid body transform $T_{i-1}$, each GPU thread projects a point $v_{i-1}$ into camera coordinate space. It then looks up the corresponding point in $V_i$ and in $N_i$ (respectfully the current vertex map and the current normal map). Doing so, we find the corresponding points along the same ray. Next, each thread tests the corresponding points to reject outliers. We compute the euclidean distance between the two global positions and angle between the two corresponding normals. If both of them are within a threshold, the match is validated. A pseudo-code of the algorithm is described in Algorithm~\ref{algo1}. $T_i$ is initialized at $T_{i-1}$ and is updated with an incremental transform at the end of each step of the ICP.
 
 \begin{algorithm}
 \caption{Projective point-plane data association}\label{algo1}
@@ -298,7 +304,7 @@ The first part of the ICP is to find correspondences between the current oriente
     \State $v \gets T_iV_i(p)$
     \State $n \gets R_iN_i(p)$
       \If{$\left\|v-v_{i-1}^{g}\right\| < \text{ distance threshold and } abs(n\cdot n_{i-1}^{g}) < \text{ normal threshold}$}
-      \State point correspondence found
+      \State point match found
       \EndIf
     \EndIf
   \EndIf
@@ -316,7 +322,7 @@ The ICP iteration is repeated multiple times in order to obtain the most accurat
 \subsubsection{Volumetric representation and integration}
 Thanks to the ICP, we now have the global pose for each depth measurement. That way, each depth map can be converted from image coordinates to global coordinate space. For computing a 3D surface, multiple techniques exists -- \cite{ISO} provides a review of the principal methods. We need a fast computation of the 3D surface, so all the Delaunay-based or region-growing techniques can not be applied here.
 
-Instead, we use a volumetric representation based on \cite{VolRep}. A 3D volume of fixed resolution is defined such as it maps the specific dimension of a 3D physical space. This volume is then divided into a grid of uniform voxels. Each voxel stores the a variant of Signed Distance Functions \cite{SDF}, specifying a relative distance to the underlying surface. The value of a Signed Distance Function is positive if the voxel is in front of the surface, negative otherwise. The surface interface is defined by the zero-crossing -- where the values change sign.
+Instead, we use a volumetric representation based on \cite{VolRep}. A 3D volume of fixed resolution is defined such as it maps the specific dimension of a 3D physical space. This volume is then divided into a grid of uniform voxels. Each voxel stores a variant of Signed Distance Functions \cite{SDF}, specifying a relative distance to the underlying surface. The value of a Signed Distance Function is positive if the voxel is in front of the surface, negative otherwise. The surface interface is defined by the zero-crossing -- where the values change sign.
 
 In KinectFusion, the value stored in a voxel is a Truncated Signed Distance Function -- TSDF \cite{VolRep}. This representation can easily be kept up to date with incoming data points -- Kinect provides roughly 5 millions measurements each second. It can handle uncertainty in the data, deal with multiple measurements and fill holes as new measurements are done.
 
@@ -387,8 +393,9 @@ $$\text{Current quaternion = Previous quaternion} * \text{Quat(axis, angle)}$$
 \begin{figure}[h]
   \centering
   \includegraphics[scale=3]{OculusHead.jpg}
-  \caption{\label{fig:ypr} The 3 angles characterizing the orientation of the head}
+  \caption{\label{fig:ypr} The 3 angles characterizing the orientation of the head\protect\footnotemark}
 \end{figure}
+\footnotetext{Illustration from the OculusVR blog}
 
 The Euler Integration is not an exact method and the gyroscope measurements are not 100\% accurate. Thus the true orientation is drifting away from the calculated orientation. Other sensors are needed to correct the orientation. The accelerometer is used for correcting the \textit{tilt error} -- where the up direction is -- while the magnetometer is used to correct the \textit{yaw error}.
 
@@ -405,8 +412,9 @@ Once the acceleration vector $a$ is found, the angle $\phi$ between $a$ and the 
 \begin{figure}[h]
   \centering
   \includegraphics[scale=0.2]{tilt.png}
-  \caption{\label{fig:tilt} Visulalisation of the tilt axis}
+  \caption{\label{fig:tilt} Visulalisation of the tilt axis\protect\footnotemark}
 \end{figure}
+\footnotetext{Illustration from the OculusVR blog}
 
 \subsubsection{Correction of the yaw error}
 The yaw error is corrected by using the magnetic field of the Earth. The magnetic field of the Eart can be represented by a 3D vector field -- with magnitude and direction. Since the user of the Rift stays in the same area, the magnetic field is assumed to be constant. The magnetometer can not directly measure the absolute magnetic field $m = (m_x, m_y, m_z)$ because it measures the field relative to its own orientation. The three-axis magnetometer measures $m$ projected on each of its axes. Figure~\ref{fig:field} illustrates the issue in 2D.
@@ -414,8 +422,9 @@ The yaw error is corrected by using the magnetic field of the Earth. The magneti
 \begin{figure}[h]
   \centering
   \includegraphics[scale=0.2]{RotMag.png}
-  \caption{\label{fig:field} Measurement of the magnetic field}
+  \caption{\label{fig:field} Measurement of the magnetic field\protect\footnotemark}
 \end{figure}
+\footnotetext{Illustration from the OculusVR blog}
 
 If the sensor is rotated anticlockwise by angle $\theta$, then the measured field is rotated by $-\theta$. So a magnetometer readind from inside the rift gives a clue about its orientation based on the sensed magnetic field vector.
 
@@ -433,7 +442,7 @@ Knowing the yaw error, the orientation of the Rift is ajusted accordingly.
 
 \subsection{Head mounted display and Lens deformation}
 \label{subsec:lensdef}
-The screen of the Rift -- sometimes called Head Mounted Display or HMD -- displays one image for the left part on the left part of the screen and one image for the right eye on the right part of the screen. The hardware is optimised for an interpupillary distance of 65mm. Two different images mean that we need to rendere the scene from two different points of view.
+The screen of the Rift -- sometimes called Head Mounted Display or HMD -- displays one image for the left part on the left part of the screen and one image for the right eye on the right part of the screen. The hardware is optimised for an interpupillary distance of 65mm. Two different images mean that we need to render the scene from two different points of view.
 
 The lenses in the Rift magnify the images, thus providing an almost real-life field of view. However, the lenses distort the images a lot. If we display the original 3D image on the screen, then the user observes a pincushion distortion effect \cite{OVRDoc} -- see Figure~\ref{fig:pindist}.
 
@@ -473,7 +482,7 @@ The core of the software resides in \texttt{kfusion.h} and \texttt{kfusion.cu}. 
 \subsubsection{Choice of the parameters}
 There are critical parameters to choose when using KinectFusion. Two of them are the size of the scene we want to map and the resolution of the corresponding volumetric representation. The size of the scene is in meters and corresponds to a cube. The resolution corresponds to the number of voxels along each axis.
 
-Figures~\ref{fig:highres} and~\ref{fig:lowres} shows the difference between a high-resolution parameter and a low-resolution parameter for the same volume size.
+Figures~\ref{fig:highres} and~\ref{fig:lowres} show the difference between a high-resolution parameter and a low-resolution parameter for the same volume size.
 
 \begin{figure}[h]
         \centering
@@ -491,7 +500,7 @@ Figures~\ref{fig:highres} and~\ref{fig:lowres} shows the difference between a hi
         
 \end{figure}
 
-Figures~\ref{fig:largevol} and~\ref{fig:smallvol} shows the difference between a large volume parameter and a small volume parameter for the same volume size.
+Figures~\ref{fig:largevol} and~\ref{fig:smallvol} show the difference between a large volume parameter and a small volume parameter for the same volume size.
 
 \begin{figure}[h]
         \centering
@@ -509,9 +518,9 @@ Figures~\ref{fig:largevol} and~\ref{fig:smallvol} shows the difference between a
         
 \end{figure}
 
-Clearly, a high resolution gives better looking result. However the higher the resolution, the more memory and computing power we ask from the GPU.
+Clearly, a high resolution gives a better looking result. However the higher the resolution, the more memory and computing power we ask from the GPU.
 
-For our project, we need to combine a good resolution so that the user thinks the scene surrounding him is real. But we also need a large volume size so the user can evolve in this space. After multiple tests, we found that the best compromise was to choose a resolution of 700 with a volume size of 5m. Figure~\ref{fig:totalvol} shows the aproximate maximum area that can be mapped using these parameters.
+For our project, we need to combine a good resolution so that the user thinks the scene surrounding him is real. But we also need a large volume size so the user can move around in the scene. After multiple tests, we found that the best compromise was to choose a resolution of 700 with a volume size of 5m. Figure~\ref{fig:totalvol} shows the aproximate maximum area that can be mapped using these parameters.
 
 \begin{figure}[h]
   \centering
@@ -521,7 +530,7 @@ For our project, we need to combine a good resolution so that the user thinks th
 
 \subsection{Lens deformation}
 \label{subsec:deformation}
-As said in subsection~\ref{subsec:lensdef}, we need to apply a barrel distortion to the image if we want to display it correctly in the Rift. Two methods are possible. The first one constists to render a normal 3D image and then distort it. The second method is to raycast directly with the lens model and not with the camera model.
+As said in subsection~\ref{subsec:lensdef}, we need to apply a barrel distortion to the image if we want to display it correctly in the Rift. Two methods are possible. The first one consists to render a normal 3D image and then distort it. The second method is to raycast directly with the lens model and not with the camera model.
 
 \subsubsection{Rendering and distorting}
 For the visualization inside the Rift, we need two renderings at two different points of view. We create two \textit{virtual cameras} either side of the Kinect camera. The two cameras are created from $K^{-1}$ by adding or subtracting an offset along the x-axis. Once we have the two modified matrices, we render the two scenes with the raycasting algorithm.
@@ -604,7 +613,7 @@ Once the distortion has been computed, we compute the corresponding ray. With th
 \end{figure}
 
 \subsection{Color rendering}
-In the original KinectFusion implementation, color isn't display directly on screen. It is recorded, averaged and then displayed for an offline view of the recorded model. In our implementation, we want to use color since we want the user to be fully immersed in the surrounding scene: a gray-scale world is not realistic. We use the Kinect camera and project on the scene the live color information. This techniques provides a direct feedback of the scene, before the volumetric integration is even done. The scene seems more natural to the user.
+In the original KinectFusion implementation, color isn't displayed directly on screen. It is recorded, averaged and then displayed for an offline view of the recorded model. In our implementation, we want to use color since we want the user to be fully immersed in the surrounding scene: a gray-scale world is not realistic. We use the Kinect camera and project on the scene the live color information. This techniques provides a direct feedback of the scene, before the volumetric integration is even done. This way, the scene seems more natural to the user.
 
 \subsubsection{Live color projection}
 \label{subsubsec:colorprojection}
@@ -653,9 +662,9 @@ Live color projection presents another small issue: the RGB camera of the Kinect
 
 \subsection{Oculus Rift Calibration}
 
-Our prototype is rudimentary. The Kinect is attached to the Rift thanks to paper clips and rubber band -- see Figure~\ref{fig:prototype}. This cause multiples issues:
+Our prototype is rudimentary. The Kinect is attached to the Rift thanks to paper clips and rubber bands -- see Figure~\ref{fig:prototype}. This cause multiples issues:
 \begin{enumerate}
-\item The Kinect can move slightly compared to the Rift. So the direction of view of the Kinect is not the same as the Rift direction view. This is a prime issue because the user head position will not match the incoming view from the Kinect. If the user is looking straight ahead and he sees his feet, it is going to confuse the brain -- and it will be painful if the user wants to really look straight ahead by tilting his head back.
+\item The Kinect can move slightly compared to the Rift. So the Kinect view direction is not the same as the Rift view direction. This is a prime issue because the user head position and orientation will not match the Kinect position and orientation. If the user is looking straight ahead and he sees his feet, it is going to confuse the brain -- and it will be painful if the user wants to really look straight ahead by tilting his head back.
 \item The position of the Kinect is not the same as the user point of view. Because of the size of the Rift and the size of the Kinect, the distance between the point of view of the user and the point of view of the Kinect is around 20cm.
 \end{enumerate}
 
@@ -789,11 +798,11 @@ This algorithm works well and fast, given that the tracked color is not a color 
 The threshold for the color comparison are the followings: $\left\| hue_{tracked} - hue_{pixel}\right\| < 0.2$ with the values in radians; $\left\| sat_{tracked} - sat_{pixel}\right\| < \dfrac{sat_{tracked}}{4}$.
 
 \subsubsection{Computing the 3D position}
-Once we have the 2D position, we need to compute the corresponding 3D position to know if the pen is in contact of a surface or not. We first compute the distance between the camera and the pen. We use the raw depth map from the Kinect. We compute the median distance for all the pixels within a certain radius of the tracked position. Here we use a 6 by 6 pixels square. The this computed distance is once again filtered: we take the median of the last 10 computed distances. These two filters help prevent the misreadings of the Kinect sensor or the bad readings when the tracked position is on the edge of the pen.
+Once we have the 2D position, we need to compute the corresponding 3D position to know if the pen is in contact of a surface or not. We first compute the distance between the camera and the pen. We use the raw depth map from the Kinect. We compute the median distance for all the pixels within a certain radius of the tracked position. Here we use a 6 by 6 pixels square. This computed distance is once again filtered: we take the median of the last 10 computed distances. These two filters help prevent the misreadings of the Kinect sensor or the bad readings when the tracked position is on the edge of the pen.
 
 Once we have the distance $d$ between the camera and the pen, we only need the direction vector from the camera to the pen. Considering the tracked position is note $u$, the direction vector is:
 $$dir = R_iK^{-1}[u,1]$$
-where $R_i$ is the current orientation pose of the Kinect and K the Kinect camera parameters. Once this vector $dir$ is normalize, we find the global 3D position of the pen:
+where $R_i$ is the current orientation pose of the Kinect and K the Kinect camera parameters. Once this vector $dir$ is normalized, we find the global 3D position of the pen:
 $$pen^g = t_i + d*dir_{norm}$$
 where $t_i$ is the current position of the Kinect.
 
@@ -806,12 +815,12 @@ In order to limit the number of positions stored in the vector, we filter the in
 
 The second technique is based on a 3D grid. We divide the space with a grid of voxels. Each voxel stores a boolean. The grid is initialized to false for every voxel. When we compute the 3D position of the pen, we look at the corresponding voxel and set its value to true. Then when we render a pixel, we look at the corresponding voxel. If the value stored is true, we colorize the pixel.
 
-Using a 3D grid is memory expensive. In our implementation, we use voxel with a size of 5mm forming a $1000*1000*1000$ voxels grid. Since a boolean has a size of 1 byte, the grid occupies 1GB of memory. On the other hand, the rendering is running smoothly, even after a long run time.
+Using a 3D grid is memory expensive. In our implementation, we use voxels with a size of 5mm forming a $1000*1000*1000$ voxels grid. Since a boolean has a size of 1 byte, the grid occupies 1GB of memory. On the other hand, the rendering is running smoothly, even after a long run time.
 
-There are some drawbacks when using the 3D grid. The first drawback is the aspect of the drawing. Because we are using a voxel grid, the drawings look pixelated. Another issue is that the pen position isn't always correctly detected. The misdetection can leave a gap in the drawing. To solve this issue, we do not only set the value of the corresponding voxel to true but also the neighboring voxels are set to true.
+There are some drawbacks when using the 3D grid. The first drawback is the aspect of the drawing. Because we are using a voxel grid, the drawings look pixelated. Another issue is that the pen position isn't always correctly detected. The misdetection can leave a gap in the drawing. To solve this issue, we do not only set the value of the corresponding voxel to true but also the neighboring voxels.
 
 \subsubsection{Results}
-The Magical pen gives good results. Figures~\ref{fig:pen1} and~\ref{fig:pen2} show drawings as rendered in the Rift.
+The Magical pen gives good results. Figures~\ref{fig:pen1} and~\ref{fig:pen2} show drawings rendered in the Rift.
 \begin{figure}[!h]
   \centering
   \includegraphics[scale=0.3]{pen1.png}
@@ -903,7 +912,7 @@ Even with the low resolution RGB camera, the live color reprojection is giving g
   \caption{\label{fig:color2} The keys on the keyboard are almost readable}
 \end{figure}
 
-Set apart the texture issue we already talk about, there is no noteworthy trouble with the live color projection.
+Set apart the texture issue we already talked about, there is no noteworthy trouble with the live color projection.
 
 \subsection{Magical pen}
 The Magical pen is a great feature and it is has nearly no impact on the framerate of our program. We use a grid of $1000\times 1000\times 1000$ voxels, so a voxel has a side of 5mm. Figure~\ref{fig:hashtag} shows a writing on a table of the Computing Lab.
@@ -947,11 +956,11 @@ If we can't use another RGB camera, an alternative solution is to record the col
 The main advantage of this last solution is that we are sure the whole scene is rendered in color. Using a good resolution, the result would be convincing. But it also comes with a major drawback: the camera takes the last known color as the color of the voxel. If an object comes in front of the camera, its color is assigned to the background since the volumetric integration takes some time to process. So a wrong color could be assigned to a voxel and creates oddities in the full colored redenred view. We can counter this effect by weighting the color just like we weight the depth for the volumetric integration. Using a weight would slow the color change so if the object doesn't stay in front of the surface too long, it won't have an effect on the registred color. For example, if a hand moves in front of the scene, the color wouldn't change right away.
 
 \subsection{Hand-tracking}
-Another useful capability would be a hand-tracking module. Right know it is almost impossible to track correctly the hands with the Kinect sensor: the hands are to close to the Kinect so we can't record the depth. Tracking the hands is interesting becomes it means the user can easily and naturally interact with the real world and the virtual world around him. It is a step forward for the augmented reality side of our project.
+Another useful capability would be a hand-tracking module. Right now it is almost impossible to track correctly the hands with the Kinect sensor: the hands are to close to the Kinect so we can't record the depth. Tracking the hands is interesting becomes it means the user can easily and naturally interact with the real world and the virtual world around him. It is a step forward for a better augmented reality experience.
 
 Using the RGB camera, we can tracked the hands in 2D. \cite{Hand2D} proposes a method using Bayesian filtering and edge detection. This method can give us a pose estimation of the hand, but not the global 3D position of the hand. We could infer the approximate 3D position from the size of the hands or the length of the arms.
 
-For tracking the hands in 3D, we need a new sensor. The company Leap Motion created a device -- the Leap -- capable of tracking hands and fingers from the user. Recently, the company demonstrated a combination of the Rift with the Leap: the Leap was able to track hands movements and the hands and arms of the user were displayed inside the Rift. However, the technology of the Leap is similar to the Kinect: infrared LEDs project an IR pattern and an IR camera reads this pattern to understand how the fingers and the hands are positionned. Since the two devices are working with the same spectrum, interferences are possible. The best sensor would be a device combining a short and long range. This could be achieved by bringing closer the IR projector and the IR camera. It is possible that the sensor used by the Project Tango tablet is capable of both short and long range scanning, but no official information are available about the range.
+For tracking the hands in 3D, we need a new sensor. The company Leap Motion created a device -- the Leap -- capable of tracking hands and fingers from the user. Recently, the company demonstrated a combination of the Rift with the Leap: the Leap was able to track hands movements and the hands and arms of the user were displayed inside the Rift. However, the technology of the Leap is similar to the Kinect: infrared LEDs project an IR pattern and an IR camera reads this pattern to understand how the fingers and the hands are positionned. Since the two devices are working with the same spectrum, interferences are possible. The best sensor would be a device combining a short and long range IR sensor. This could be achieved by bringing closer the IR projector and the IR camera. It is possible that the sensor used by the Project Tango tablet is capable of both short and long range scanning, but no official information are available about the range.
 
 Another solution is to use a stereo camera to retrieve 3D information. \cite{HandStereo} provides a method using stereo cameras to compute the pose estimation of multiple hands and the global position of the hands. Using a small-spaced stereo camera, we could retrieve the 3D information in the close range of the Rift without creating interference with the Kinect sensor.
 
@@ -1002,14 +1011,16 @@ The size of the combined sensor is terribly smaller than the Kinect one. Figure~
 \begin{figure}[!h]
   \centering
   \includegraphics[scale=0.1]{TangoPhone.jpeg}
-  \caption{\label{fig:tangophone} Project Tango Phone: IR camera on the left, IR projector on the right}
+  \caption{\label{fig:tangophone} Project Tango Phone: IR camera on the left, IR projector on the right\protect\footnotemark}
 \end{figure}
+\footnotetext{Photo CC BY-NC-SA 3.0 by iFixit}
 
 \begin{figure}[!h]
   \centering
   \includegraphics[scale=0.27]{TangoTab.jpeg}
-  \caption{\label{fig:tangotablet} Project Tango Tablet: IR camera on the left, IR projector on the right}
+  \caption{\label{fig:tangotablet} Project Tango Tablet: IR camera on the left, IR projector on the right\protect\footnotemark}
 \end{figure}
+\footnotetext{Photo CC BY-NC-SA 3.0 by iFixit}
 
 We can see that the sensors are now very small and yet provides -- according to Google -- the same capabilities as the Kinect sensor. This integration of the sensors shows that our prototype could be greatly improved by using this new components.
 
@@ -1040,7 +1051,7 @@ The interest in Virtual Reality and Augmented Reality is still growing, with com
 
 
 \newpage
-\addcontentsline{toc}{section}{References}
 \bibliographystyle{plain}
 \bibliography{biblio}
+\addcontentsline{toc}{section}{References}
 \end{document}
